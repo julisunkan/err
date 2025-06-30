@@ -18,7 +18,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- HTML generator - no external libraries needed -->
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -295,17 +295,18 @@
             generatedCodes = [];
         });
 
-        // Download codes as PDF
+        // Download codes as text file
         document.getElementById('downloadPdfBtn').addEventListener('click', function() {
             try {
-                if (typeof window.jspdf === 'undefined') {
-                    throw new Error('PDF library not loaded. Please refresh the page and try again.');
-                }
+                const codesText = `Download Codes Generated on ${new Date().toLocaleString()}\n\n` +
+                    generatedCodes.map((codeInfo, index) => 
+                        `${index + 1}. Code: ${codeInfo.code}\n   Expires: ${codeInfo.expires_at}\n   Status: ${codeInfo.is_used ? 'Used' : 'Available'}\n`
+                    ).join('\n');
 
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-
-                // Set document properties
+                const blob = new Blob([codesText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
                 doc.setProperties({
                     title: 'Download Codes',
                     subject: 'Generated Download Codes',

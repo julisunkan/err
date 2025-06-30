@@ -756,7 +756,7 @@
                     if (importInput) {
                         importInput.click();
                     }
-                });
+                                });
             }
 
             // Guest currency selection
@@ -1053,7 +1053,7 @@
                     document.getElementById('verifyCodeBtn').disabled = true;
                     document.getElementById('pdfDownloadCode').disabled = true;
 
-                    showSuccess('Code verified successfully! You can now generate the PDF.');
+                    showSuccess('Code verified successfully! You can now generate the HTML.');
                 } else {
                     showError('Error: ' + data.error);
                     isCodeVerified = false;
@@ -1066,200 +1066,134 @@
             });
         }
 
-        // Generate PDF
+        // Generate PDF function
         function generatePDF() {
             if (!isCodeVerified) {
-                showError('Please verify a download code first.');
+                showError('Please verify your download code first');
                 return;
             }
 
             try {
-                // Check if jsPDF is loaded
-                if (typeof window.jspdf === 'undefined') {
-                    throw new Error('PDF library not loaded. Please refresh the page and try again.');
+                // Check if Enhanced PDF Generator is available
+                if (!window.EnhancedPDFGenerator) {
+                    showError('PDF Generator not loaded. Please refresh the page.');
+                    return;
                 }
 
-                generatePDFWithCode();
+                const documentData = collectDocumentData();
+                console.log('Generating PDF with document data:', documentData);
+
+                // Show loading message
+                showSuccess('Generating PDF document... Please wait.');
+
+                // Generate and download PDF
+                window.EnhancedPDFGenerator.downloadPDF(documentData)
+                    .then((filename) => {
+                        showSuccess(`PDF document "${filename}" generated and downloaded successfully!`);
+                    })
+                    .catch(error => {
+                        console.error('Error downloading PDF:', error);
+                        showError('Error generating PDF: ' + error.message);
+                    });
+
             } catch (error) {
-                console.error('PDF generation error:', error);
-                showError('Error: ' + error.message);
+                console.error('Error generating PDF:', error);
+                showError('Error generating PDF: ' + error.message);
             }
         }
 
-        // Generate PDF with verified code
-        function generatePDFWithCode() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
-            // Use verified business settings
-            const settings = verifiedBusinessSettings;
-
-            // Helper function to format numbers with comma for thousands
-            function formatNumberWithCommas(number) {
-                return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            }
-
-            // Add document content with proper formatting
+        // Collect document data function
+        function collectDocumentData() {
             const formData = new FormData(document.getElementById('documentForm'));
-            const docType = formData.get('documentType') || 'invoice';
-            const docNumber = formData.get('documentNumber') || '';
-            const docDate = formData.get('documentDate') || '';
-            const clientName = formData.get('clientName') || '';
-            const clientAddress = formData.get('clientAddress') || '';
-            const notes = formData.get('notes') || '';
+            
+            // Use verified business settings if available
+            const currentSettings = window.verifiedBusinessSettings || businessSettings;
 
-            // Margins and starting positions
-            const margin = 20;
-            let yPos = margin;
+            // Build document data object
+            const documentData = {
+                type: formData.get('documentType') || 'invoice',
+                number: formData.get('documentNumber') || 'INV-001',
+                date: formData.get('documentDate') || new Date().toISOString().split('T')[0],
+                dueDate: formData.get('dueDate') || '',
+                notes: formData.get('notes') || '',
 
-            // Function to add text with auto-wrapping
-            function addWrappedText(text, x, y, maxWidth) {
-                const textLines = doc.splitTextToSize(text, maxWidth);
-                textLines.forEach(line => {
-                    doc.text(line, x, y);
-                    y += 10;
-                });
-                return y;
-            }
+                // Business settings
+                business: {
+                    businessName: currentSettings.businessName || 'Your Business Name',
+                    businessAddress: currentSettings.businessAddress || '',
+                    businessPhone: currentSettings.businessPhone || '',
+                    businessEmail: currentSettings.businessEmail || '',
+                    businessLogoUrl: currentSettings.businessLogoUrl || '',
+                    signatureUrl: currentSettings.signatureUrl || '',
+                    taxRate: currentSettings.taxRate || 0,
+                    currency: currentSettings.currency || 'USD'
+                },
 
-            // Business Logo (Top-Right)
-            if (settings.businessLogoUrl) {
-                try {
-                    doc.addImage(settings.businessLogoUrl, 'PNG', 140, yPos, 50, 30);
-                } catch (e) {
-                    console.error("Error adding business logo:", e);
-                    doc.text("Business Logo Failed to Load", 140, yPos + 15);
-                }
-            }
+                // Client information
+                client: {
+                    name: formData.get('clientName') || '',
+                    address: formData.get('clientAddress') || '',
+                    phone: formData.get('clientPhone') || '',
+                    email: formData.get('clientEmail') || ''
+                },
 
-            // Business Info (Top-Left)
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text(settings.businessName || 'Your Business Name', margin, yPos += 20);
+                // Items
+                items: collectItems(),
 
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
-            if (settings.businessAddress) {
-                yPos = addWrappedText(settings.businessAddress, margin, yPos += 10, 100);
-            }
-             if (settings.businessPhone) {
-                doc.text("Phone: " + settings.businessPhone, margin, yPos += 10);
-            }
-            if (settings.businessEmail) {
-                doc.text("Email: " + settings.businessEmail, margin, yPos += 10);
-            }
+                // Totals
+                totals: calculateTotalsData()
+            };
 
-             // Document Type and Details
-            doc.setFontSize(16);
-            doc.setFont(undefined, 'bold');
-            doc.text(docType.charAt(0).toUpperCase() + docType.slice(1).replace('_', ' '), margin, yPos += 20);
+            return documentData;
+        }
 
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
-            doc.text(`Document Number: ${docNumber}`, margin, yPos += 10);
-            doc.text(`Date: ${docDate}`, margin, yPos += 10);
-
-             // Client Information
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('Bill To:', margin, yPos += 20);
-
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
-            if (clientName) {
-                doc.text(clientName, margin, yPos += 10);
-            }
-            if (clientAddress) {
-                yPos = addWrappedText(clientAddress, margin, yPos += 10, 100);
-            }
-
-            // Item Table Header
-            const tableX = margin;
-            let tableY = yPos += 20;
-
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'bold');
-            doc.text('Description', tableX, tableY);
-            doc.text('Qty', tableX + 80, tableY);
-            doc.text('Price', tableX + 100, tableY);
-            doc.text('Total', tableX + 120, tableY);
-            doc.line(tableX, tableY + 3, tableX + 140, tableY + 3);
-
-            // Item Table Rows
-            doc.setFont(undefined, 'normal');
-            const itemRows = document.querySelectorAll('.item-row');
-            itemRows.forEach(row => {
-                const description = row.querySelector('.item-description').value || '';
-                const quantity = row.querySelector('.item-quantity').value || '';
-                const price = row.querySelector('.item-price').value || '';
-                const total = row.querySelector('.item-total').value || '';
+        // Helper function to collect items
+        function collectItems() {
+            const items = [];
+            document.querySelectorAll('.item-row').forEach(row => {
+                const description = row.querySelector('.item-description').value;
+                const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                const total = quantity * price;
 
                 if (description || quantity || price) {
-                    tableY += 10;
-                    doc.text(description.substring(0, 30), tableX, tableY);
-                    doc.text(quantity, tableX + 80, tableY);
-                    doc.text(price, tableX + 100, tableY);
-                    doc.text(total, tableX + 120, tableY);
+                    items.push({ 
+                        description, 
+                        quantity, 
+                        price, 
+                        total,
+                        discount: 0 // Default discount
+                    });
                 }
             });
+            return items;
+        }
 
-             // Calculate Totals
+        // Helper function to calculate totals
+        function calculateTotalsData() {
             let subtotal = 0;
-            itemRows.forEach(row => {
-                 const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+            document.querySelectorAll('.item-row').forEach(row => {
+                const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
                 const price = parseFloat(row.querySelector('.item-price').value) || 0;
                 subtotal += quantity * price;
             });
 
-            const taxRate = parseFloat(settings.taxRate) || 0;
+            const taxRate = parseFloat(businessSettings.taxRate) || 0;
             const taxAmount = subtotal * (taxRate / 100);
-            const totalAmount = subtotal + taxAmount;
+            const grandTotal = subtotal + taxAmount;
 
-            // Totals Summary
-            let totalsY = tableY += 20;
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'bold');
-            doc.text('Subtotal:', tableX + 80, totalsY);
-            doc.setFont(undefined, 'normal');
-            doc.text(formatCurrency(subtotal), tableX + 110, totalsY);
-
-            totalsY += 10;
-            doc.setFont(undefined, 'bold');
-            doc.text('Tax (' + taxRate.toFixed(1) + '%):', tableX + 80, totalsY);
-            doc.setFont(undefined, 'normal');
-            doc.text(formatCurrency(taxAmount), tableX + 110, totalsY);
-
-            totalsY += 10;
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('Total:', tableX + 80, totalsY);
-            doc.setFont(undefined, 'normal');
-            doc.text(formatCurrency(totalAmount), tableX + 110, totalsY);
-
-             // Notes Section
-            if (notes) {
-                let notesY = totalsY += 20;
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'bold');
-                doc.text('Notes:', margin, notesY);
-                doc.setFont(undefined, 'normal');
-                addWrappedText(notes, margin, notesY += 10, 180);
-            }
-
-             // Signature
-            if (settings.signatureUrl) {
-                try {
-                    doc.addImage(settings.signatureUrl, 'PNG', margin, 250, 60, 30); // Adjust position as needed
-                    doc.text("Authorized Signature", margin, 285); // Signature label
-                } catch (e) {
-                    console.error("Error adding signature:", e);
-                    doc.text("Signature Failed to Load", margin, 270);
-                }
-            }
-
-            // Save the PDF
-            doc.save(`${docType}-${docNumber}.pdf`);
+            return {
+                subtotal: subtotal,
+                taxRate: taxRate,
+                taxAmount: taxAmount,
+                grandTotal: grandTotal
+            };
         }
+
+        // Load PDF generation script
+        const script = document.createElement('script');
+        script.src = '/static/js/pdf-generator.js';
+        document.head.appendChild(script);
 
         // Generate download code
         function generateCode() {
@@ -1306,12 +1240,12 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showSuccess('Code verified! Generating PDF download...');
+                    showSuccess('Code verified! Generating HTML download...');
                     // Load user's business settings if provided
                     if (data.business_settings) {
                         businessSettings = data.business_settings;
                     }
-                    generatePDFWithCode();
+                    generateHTML();
                 } else {
                     showError('Error: ' + data.error);
                 }
