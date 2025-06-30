@@ -1,3 +1,4 @@
+
 // Business Documents Generator - Main Application
 console.log('App.js loading...');
 
@@ -81,12 +82,171 @@ function showSuccess(message) {
     main.insertBefore(alert, main.firstChild);
 }
 
+// Global variables
+window.isCodeVerified = false;
+var isCodeVerified = false;
+
 // Global error handler
 window.addEventListener('error', function(event) {
     console.error('Global error:', event.error);
     showError('An unexpected error occurred. Please refresh the page.');
 });
 
-// PDF generation function (moved to index.html)
+// Verify download code
+function verifyDownloadCode() {
+    const code = document.getElementById('pdfDownloadCode').value.trim();
+
+    if (!code) {
+        showError('Please enter a download code');
+        return;
+    }
+
+    fetch('/api/verify-code', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code: code })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.isCodeVerified = true;
+            // Also set the global variable for broader access
+            if (typeof isCodeVerified !== 'undefined') {
+                isCodeVerified = true;
+            }
+
+            // Update business settings with verified data
+            if (data.business_settings) {
+                businessSettings = data.business_settings;
+                console.log('Business settings updated from verification:', businessSettings);
+
+                // Ensure business settings are not empty
+                if (!businessSettings.businessName || businessSettings.businessName.trim() === '') {
+                    businessSettings.businessName = 'Business Documents Generator';
+                }
+            }
+
+            showSuccess('Code verified! You can now generate and download documents.');
+
+            // Update preview with new settings
+            updatePreview();
+        } else {
+            window.isCodeVerified = false;
+            if (typeof isCodeVerified !== 'undefined') {
+                isCodeVerified = false;
+            }
+            showError(data.error || 'Invalid code');
+        }
+    })
+    .catch(error => {
+        console.error('Error verifying code:', error);
+        showError('Error verifying code');
+    });
+}
+
+// Collect document data including all business settings
+function collectDocumentData() {
+    // Get form data
+    const formData = new FormData(document.getElementById('documentForm'));
+    
+    // Build document data object
+    const documentData = {
+        type: formData.get('documentType') || 'invoice',
+        number: formData.get('documentNumber') || 'INV-001',
+        date: formData.get('documentDate') || new Date().toISOString().split('T')[0],
+        dueDate: formData.get('dueDate') || '',
+        
+        // Business settings (use current businessSettings)
+        business: {
+            businessName: businessSettings.businessName || 'Your Business Name',
+            businessAddress: businessSettings.businessAddress || '',
+            businessPhone: businessSettings.businessPhone || '',
+            businessEmail: businessSettings.businessEmail || '',
+            businessLogoUrl: businessSettings.businessLogoUrl || '',
+            signatureUrl: businessSettings.signatureUrl || '',
+            taxRate: businessSettings.taxRate || 0,
+            currency: businessSettings.currency || 'USD'
+        },
+        
+        // Client information
+        client: {
+            name: formData.get('clientName') || '',
+            address: formData.get('clientAddress') || '',
+            phone: formData.get('clientPhone') || '',
+            email: formData.get('clientEmail') || ''
+        },
+        
+        // Items
+        items: collectItems(),
+        
+        // Totals
+        totals: calculateTotals(),
+        
+        // Currency
+        currency: businessSettings.currency || 'USD'
+    };
+
+    console.log('Collected document data:', documentData);
+    return documentData;
+}
+
+// Generate and download PDF function
+async function generatePDF() {
+    if (!isCodeVerified) {
+        showError('Please verify your download code first');
+        return;
+    }
+
+    try {
+        if (!window.EnhancedPDFGenerator) {
+            throw new Error('Enhanced PDF Generator not available. Please refresh the page.');
+        }
+
+        const documentData = collectDocumentData();
+        console.log('Generating PDF with document data:', documentData);
+
+        // Show loading message
+        showSuccess('Generating PDF... Please wait.');
+
+        // Generate and download PDF
+        await window.EnhancedPDFGenerator.downloadPDF(documentData);
+        
+        // Show success message
+        showSuccess('PDF generated and downloaded successfully!');
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showError('Error generating PDF: ' + error.message);
+    }
+}
+
+// Generate and download HTML function
+function generateHTML() {
+    if (!isCodeVerified) {
+        showError('Please verify your download code first');
+        return;
+    }
+
+    try {
+        if (!window.EnhancedPDFGenerator) {
+            throw new Error('Enhanced PDF Generator not available. Please refresh the page.');
+        }
+
+        const documentData = collectDocumentData();
+        console.log('Generating HTML with document data:', documentData);
+
+        // Generate and download HTML
+        window.EnhancedPDFGenerator.downloadHTML(documentData);
+        
+        // Show success message
+        showSuccess('HTML document generated and downloaded successfully!');
+
+    } catch (error) {
+        console.error('Error generating HTML:', error);
+        showError('Error generating HTML: ' + error.message);
+    }
+}
 
 console.log('App.js loaded successfully');

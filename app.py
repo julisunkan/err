@@ -722,28 +722,52 @@ def verify_code():
             # Add business settings if available
             if user_settings:
                 response_data['business_settings'] = {
-                    'businessName': user_settings.business_name,
-                    'businessAddress': user_settings.business_address,
-                    'businessPhone': user_settings.business_phone,
-                    'businessEmail': user_settings.business_email,
-                    'businessLogoUrl': user_settings.business_logo_url,
-                    'signatureUrl': user_settings.signature_url,
-                    'taxRate': user_settings.tax_rate,
-                    'currency': user_settings.currency
+                    'businessName': user_settings.business_name or '',
+                    'businessAddress': user_settings.business_address or '',
+                    'businessPhone': user_settings.business_phone or '',
+                    'businessEmail': user_settings.business_email or '',
+                    'businessLogoUrl': user_settings.business_logo_url or '',
+                    'signatureUrl': user_settings.signature_url or '',
+                    'taxRate': user_settings.tax_rate or 0,
+                    'currency': user_settings.currency or 'USD'
+                }
+            else:
+                # Create empty settings for user if none exist
+                response_data['business_settings'] = {
+                    'businessName': '',
+                    'businessAddress': '',
+                    'businessPhone': '',
+                    'businessEmail': '',
+                    'businessLogoUrl': '',
+                    'signatureUrl': '',
+                    'taxRate': 0,
+                    'currency': 'USD'
                 }
         else:
             # For bulk codes without specific user, use default settings
             default_settings = BusinessSettings.query.first()
             if default_settings:
                 response_data['business_settings'] = {
-                    'businessName': default_settings.business_name,
-                    'businessAddress': default_settings.business_address,
-                    'businessPhone': default_settings.business_phone,
-                    'businessEmail': default_settings.business_email,
-                    'businessLogoUrl': default_settings.business_logo_url,
-                    'signatureUrl': default_settings.signature_url,
-                    'taxRate': default_settings.tax_rate,
-                    'currency': default_settings.currency
+                    'businessName': default_settings.business_name or '',
+                    'businessAddress': default_settings.business_address or '',
+                    'businessPhone': default_settings.business_phone or '',
+                    'businessEmail': default_settings.business_email or '',
+                    'businessLogoUrl': default_settings.business_logo_url or '',
+                    'signatureUrl': default_settings.signature_url or '',
+                    'taxRate': default_settings.tax_rate or 0,
+                    'currency': default_settings.currency or 'USD'
+                }
+            else:
+                # Default empty settings
+                response_data['business_settings'] = {
+                    'businessName': '',
+                    'businessAddress': '',
+                    'businessPhone': '',
+                    'businessEmail': '',
+                    'businessLogoUrl': '',
+                    'signatureUrl': '',
+                    'taxRate': 0,
+                    'currency': 'USD'
                 }
         
         # Add document data if available
@@ -774,23 +798,66 @@ def save_settings():
             user_settings = UserBusinessSettings(user_id=session['user_id'])
             db.session.add(user_settings)
         
-        # Update settings
-        user_settings.business_name = data.get('businessName', '')
-        user_settings.business_address = data.get('businessAddress', '')
-        user_settings.business_phone = data.get('businessPhone', '')
-        user_settings.business_email = data.get('businessEmail', '')
-        user_settings.business_logo_url = data.get('businessLogoUrl', '')
-        user_settings.signature_url = data.get('signatureUrl', '')
+        # Update settings with proper handling of empty values
+        user_settings.business_name = data.get('businessName', '').strip()
+        user_settings.business_address = data.get('businessAddress', '').strip()
+        user_settings.business_phone = data.get('businessPhone', '').strip()
+        user_settings.business_email = data.get('businessEmail', '').strip()
+        user_settings.business_logo_url = data.get('businessLogoUrl', '').strip()
+        user_settings.signature_url = data.get('signatureUrl', '').strip()
         user_settings.tax_rate = float(data.get('taxRate', 0))
-        user_settings.currency = data.get('currency', 'USD')
+        user_settings.currency = data.get('currency', 'USD').strip()
         
         db.session.commit()
+        
+        logging.info(f"Settings saved for user {session['user_id']}: {user_settings.business_name}")
         
         return jsonify({'success': True, 'message': 'Settings saved successfully'})
         
     except Exception as e:
+        db.session.rollback()
         logging.error(f"Error saving settings: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to save settings'}), 500
+
+@app.route('/api/get-public-settings')
+def get_public_settings():
+    """Get default business settings for public use"""
+    try:
+        # Get default global settings
+        settings = BusinessSettings.query.first()
+        if settings:
+            return jsonify({
+                'success': True,
+                'settings': {
+                    'businessName': settings.business_name or '',
+                    'businessAddress': settings.business_address or '',
+                    'businessPhone': settings.business_phone or '',
+                    'businessEmail': settings.business_email or '',
+                    'businessLogoUrl': settings.business_logo_url or '',
+                    'signatureUrl': settings.signature_url or '',
+                    'taxRate': settings.tax_rate or 0,
+                    'currency': settings.currency or 'USD'
+                }
+            })
+        
+        # Default empty settings
+        return jsonify({
+            'success': True,
+            'settings': {
+                'businessName': '',
+                'businessAddress': '',
+                'businessPhone': '',
+                'businessEmail': '',
+                'businessLogoUrl': '',
+                'signatureUrl': '',
+                'taxRate': 0,
+                'currency': 'USD'
+            }
+        })
+        
+    except Exception as e:
+        logging.error(f"Error getting public settings: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get settings'}), 500
 
 @app.route('/api/get-settings')
 def get_settings():
@@ -803,45 +870,46 @@ def get_settings():
                 return jsonify({
                     'success': True,
                     'settings': {
-                        'businessName': user_settings.business_name,
-                        'businessAddress': user_settings.business_address,
-                        'businessPhone': user_settings.business_phone,
-                        'businessEmail': user_settings.business_email,
-                        'businessLogoUrl': user_settings.business_logo_url,
-                        'signatureUrl': user_settings.signature_url,
-                        'taxRate': user_settings.tax_rate,
-                        'currency': user_settings.currency
+                        'businessName': user_settings.business_name or '',
+                        'businessAddress': user_settings.business_address or '',
+                        'businessPhone': user_settings.business_phone or '',
+                        'businessEmail': user_settings.business_email or '',
+                        'businessLogoUrl': user_settings.business_logo_url or '',
+                        'signatureUrl': user_settings.signature_url or '',
+                        'taxRate': user_settings.tax_rate or 0,
+                        'currency': user_settings.currency or 'USD'
                     }
                 })
         
         # Fallback to global settings or defaults
         settings = BusinessSettings.query.first()
-        if not settings:
+        if settings:
             return jsonify({
                 'success': True,
                 'settings': {
-                    'businessName': '',
-                    'businessAddress': '',
-                    'businessPhone': '',
-                    'businessEmail': '',
-                    'businessLogoUrl': '',
-                    'signatureUrl': '',
-                    'taxRate': 0,
-                    'currency': 'USD'
+                    'businessName': settings.business_name or '',
+                    'businessAddress': settings.business_address or '',
+                    'businessPhone': settings.business_phone or '',
+                    'businessEmail': settings.business_email or '',
+                    'businessLogoUrl': settings.business_logo_url or '',
+                    'signatureUrl': settings.signature_url or '',
+                    'taxRate': settings.tax_rate or 0,
+                    'currency': settings.currency or 'USD'
                 }
             })
         
+        # Default empty settings
         return jsonify({
             'success': True,
             'settings': {
-                'businessName': settings.business_name,
-                'businessAddress': settings.business_address,
-                'businessPhone': settings.business_phone,
-                'businessEmail': settings.business_email,
-                'businessLogoUrl': settings.business_logo_url,
-                'signatureUrl': settings.signature_url,
-                'taxRate': settings.tax_rate,
-                'currency': settings.currency
+                'businessName': '',
+                'businessAddress': '',
+                'businessPhone': '',
+                'businessEmail': '',
+                'businessLogoUrl': '',
+                'signatureUrl': '',
+                'taxRate': 0,
+                'currency': 'USD'
             }
         })
         
