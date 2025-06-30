@@ -144,6 +144,21 @@
                                             </div>
                                         </div>
 
+                                        <!-- Guest Currency Selection (only show if not logged in) -->
+                                        {% if not session.user_id %}
+                                        <div class="mb-3">
+                                            <label for="guestCurrency" class="form-label">Currency</label>
+                                            <select class="form-select" id="guestCurrency">
+                                                <option value="USD">USD ($)</option>
+                                                <option value="EUR">EUR (€)</option>
+                                                <option value="GBP">GBP (£)</option>
+                                                <option value="NGN">NGN (₦)</option>
+                                                <option value="CAD">CAD ($)</option>
+                                                <option value="AUD">AUD ($)</option>
+                                            </select>
+                                        </div>
+                                        {% endif %}
+
                                         <!-- Items Section -->
                                         <h6 class="mb-3">Items</h6>
                                         <div id="itemsContainer">
@@ -678,7 +693,7 @@
             // Generate download code button
             const generateCodeBtn = document.getElementById('generateCode');
             if (generateCodeBtn) {
-                generateCodeBtn.addEventListener('click', generateDownloadCode);
+                generateCodeBtn.addEventListener('click', generateCode);
             }
 
             // Download form
@@ -744,6 +759,16 @@
                 });
             }
 
+            // Guest currency selection
+            const guestCurrencySelect = document.getElementById('guestCurrency');
+            if (guestCurrencySelect) {
+                guestCurrencySelect.addEventListener('change', function(e) {
+                    businessSettings.currency = e.target.value;
+                    calculateTotals();
+                    updatePreview();
+                });
+            }
+
             const importInput = document.getElementById('importFileInput');
             if (importInput) {
                 importInput.addEventListener('change', importUserSettings);
@@ -762,7 +787,6 @@
 
             let prefix = '';
             switch(type) {
-                ```text
                 case 'invoice': prefix = 'INV'; break;
                 case 'quotation': prefix = 'QUO'; break;
                 case 'purchase_order': prefix = 'PO'; break;
@@ -840,7 +864,7 @@
                 const price = parseFloat(row.querySelector('.item-price').value) || 0;
                 const total = quantity * price;
 
-                row.querySelector('.item-total').value = `$${total.toFixed(2)}`;
+                row.querySelector('.item-total').value = formatCurrency(total);
                 subtotal += total;
             });
 
@@ -848,9 +872,34 @@
             const tax = subtotal * (taxRate / 100);
             const total = subtotal + tax;
 
-            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-            document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
-            document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+            document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+            document.getElementById('tax').textContent = formatCurrency(tax);
+            document.getElementById('total').textContent = formatCurrency(total);
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            const currency = businessSettings.currency || 'USD';
+            try {
+                const formatter = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: currency,
+                    minimumFractionDigits: 2,
+                });
+                return formatter.format(amount);
+            } catch (error) {
+                // Fallback for unsupported currencies
+                const symbols = {
+                    'USD': '$',
+                    'EUR': '€',
+                    'GBP': '£',
+                    'NGN': '₦',
+                    'CAD': 'C$',
+                    'AUD': 'A$'
+                };
+                const symbol = symbols[currency] || currency;
+                return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
         }
 
         // Update live preview
@@ -926,7 +975,7 @@
                                 <tr>
                                     <td>${item.description}</td>
                                     <td>${item.quantity}</td>
-                                    <td>$${parseFloat(item.price || 0).toFixed(2)}</td>
+                                    <td>${formatCurrency(parseFloat(item.price || 0))}</td>
                                     <td>${item.total}</td>
                                 </tr>
                             `).join('')}
@@ -1045,6 +1094,11 @@
             // Use verified business settings
             const settings = verifiedBusinessSettings;
 
+            // Helper function to format numbers with comma for thousands
+            function formatNumberWithCommas(number) {
+                return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+
             // Add document content with proper formatting
             const formData = new FormData(document.getElementById('documentForm'));
             const docType = formData.get('documentType') || 'invoice';
@@ -1054,62 +1108,86 @@
             const clientAddress = formData.get('clientAddress') || '';
             const notes = formData.get('notes') || '';
 
-            // Header
-            doc.setFontSize(20);
-            doc.setFont(undefined, 'bold');
-            doc.text(docType.charAt(0).toUpperCase() + docType.slice(1).replace('_', ' '), 20, 30);
+            // Margins and starting positions
+            const margin = 20;
+            let yPos = margin;
 
-            // Business info
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'normal');
-            doc.text(settings.businessName || 'Your Business Name', 20, 50);
-            if (settings.businessAddress) {
-                const addressLines = settings.businessAddress.split('\n');
-                addressLines.forEach((line, index) => {
-                    doc.text(line, 20, 60 + (index * 8));
+            // Function to add text with auto-wrapping
+            function addWrappedText(text, x, y, maxWidth) {
+                const textLines = doc.splitTextToSize(text, maxWidth);
+                textLines.forEach(line => {
+                    doc.text(line, x, y);
+                    y += 10;
                 });
+                return y;
             }
 
-            // Document details
-            doc.setFont(undefined, 'bold');
-            doc.text('Document Details:', 120, 50);
-            doc.setFont(undefined, 'normal');
-            doc.text(`Number: ${docNumber}`, 120, 60);
-            doc.text(`Date: ${docDate}`, 120, 70);
+            // Business Logo (Top-Right)
+            if (settings.businessLogoUrl) {
+                try {
+                    doc.addImage(settings.businessLogoUrl, 'PNG', 140, yPos, 50, 30);
+                } catch (e) {
+                    console.error("Error adding business logo:", e);
+                    doc.text("Business Logo Failed to Load", 140, yPos + 15);
+                }
+            }
 
-            // Client info
-            let yPos = 100;
+            // Business Info (Top-Left)
+            doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
-            doc.text('Bill To:', 20, yPos);
+            doc.text(settings.businessName || 'Your Business Name', margin, yPos += 20);
+
+            doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
-            yPos += 10;
+            if (settings.businessAddress) {
+                yPos = addWrappedText(settings.businessAddress, margin, yPos += 10, 100);
+            }
+             if (settings.businessPhone) {
+                doc.text("Phone: " + settings.businessPhone, margin, yPos += 10);
+            }
+            if (settings.businessEmail) {
+                doc.text("Email: " + settings.businessEmail, margin, yPos += 10);
+            }
+
+             // Document Type and Details
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text(docType.charAt(0).toUpperCase() + docType.slice(1).replace('_', ' '), margin, yPos += 20);
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Document Number: ${docNumber}`, margin, yPos += 10);
+            doc.text(`Date: ${docDate}`, margin, yPos += 10);
+
+             // Client Information
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('Bill To:', margin, yPos += 20);
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
             if (clientName) {
-                doc.text(clientName, 20, yPos);
-                yPos += 8;
+                doc.text(clientName, margin, yPos += 10);
             }
             if (clientAddress) {
-                const clientAddressLines = clientAddress.split('\n');
-                clientAddressLines.forEach((line) => {
-                    doc.text(line, 20, yPos);
-                    yPos += 8;
-                });
+                yPos = addWrappedText(clientAddress, margin, yPos += 10, 100);
             }
 
-            // Items table
-            yPos += 20;
+            // Item Table Header
+            const tableX = margin;
+            let tableY = yPos += 20;
+
+            doc.setFontSize(10);
             doc.setFont(undefined, 'bold');
-            doc.text('Description', 20, yPos);
-            doc.text('Qty', 120, yPos);
-            doc.text('Price', 140, yPos);
-            doc.text('Total', 170, yPos);
+            doc.text('Description', tableX, tableY);
+            doc.text('Qty', tableX + 80, tableY);
+            doc.text('Price', tableX + 100, tableY);
+            doc.text('Total', tableX + 120, tableY);
+            doc.line(tableX, tableY + 3, tableX + 140, tableY + 3);
 
-            yPos += 10;
-            doc.line(20, yPos, 190, yPos); // Header line
-            yPos += 10;
-
-            // Add items
-            const itemRows = document.querySelectorAll('.item-row');
+            // Item Table Rows
             doc.setFont(undefined, 'normal');
+            const itemRows = document.querySelectorAll('.item-row');
             itemRows.forEach(row => {
                 const description = row.querySelector('.item-description').value || '';
                 const quantity = row.querySelector('.item-quantity').value || '';
@@ -1117,40 +1195,66 @@
                 const total = row.querySelector('.item-total').value || '';
 
                 if (description || quantity || price) {
-                    doc.text(description.substring(0, 40), 20, yPos);
-                    doc.text(quantity, 120, yPos);
-                    doc.text(`$${parseFloat(price || 0).toFixed(2)}`, 140, yPos);
-                    doc.text(total, 170, yPos);
-                    yPos += 10;
+                    tableY += 10;
+                    doc.text(description.substring(0, 30), tableX, tableY);
+                    doc.text(quantity, tableX + 80, tableY);
+                    doc.text(price, tableX + 100, tableY);
+                    doc.text(total, tableX + 120, tableY);
                 }
             });
 
-            // Totals
-            yPos += 10;
-            doc.line(120, yPos, 190, yPos); // Totals line
-            yPos += 10;
+             // Calculate Totals
+            let subtotal = 0;
+            itemRows.forEach(row => {
+                 const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                subtotal += quantity * price;
+            });
 
-            doc.text('Subtotal:', 140, yPos);
-            doc.text(document.getElementById('subtotal').textContent, 170, yPos);
-            yPos += 8;
+            const taxRate = parseFloat(settings.taxRate) || 0;
+            const taxAmount = subtotal * (taxRate / 100);
+            const totalAmount = subtotal + taxAmount;
 
-            doc.text('Tax:', 140, yPos);
-            doc.text(document.getElementById('tax').textContent, 170, yPos);
-            yPos += 8;
-
+            // Totals Summary
+            let totalsY = tableY += 20;
+            doc.setFontSize(10);
             doc.setFont(undefined, 'bold');
-            doc.text('Total:', 140, yPos);
-            doc.text(document.getElementById('total').textContent, 170, yPos);
+            doc.text('Subtotal:', tableX + 80, totalsY);
+            doc.setFont(undefined, 'normal');
+            doc.text(formatCurrency(subtotal), tableX + 110, totalsY);
 
-            // Notes
+            totalsY += 10;
+            doc.setFont(undefined, 'bold');
+            doc.text('Tax (' + taxRate.toFixed(1) + '%):', tableX + 80, totalsY);
+            doc.setFont(undefined, 'normal');
+            doc.text(formatCurrency(taxAmount), tableX + 110, totalsY);
+
+            totalsY += 10;
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('Total:', tableX + 80, totalsY);
+            doc.setFont(undefined, 'normal');
+            doc.text(formatCurrency(totalAmount), tableX + 110, totalsY);
+
+             // Notes Section
             if (notes) {
-                yPos += 20;
+                let notesY = totalsY += 20;
+                doc.setFontSize(10);
                 doc.setFont(undefined, 'bold');
-                doc.text('Notes:', 20, yPos);
+                doc.text('Notes:', margin, notesY);
                 doc.setFont(undefined, 'normal');
-                yPos += 10;
-                const noteLines = doc.splitTextToSize(notes, 170);
-                doc.text(noteLines, 20, yPos);
+                addWrappedText(notes, margin, notesY += 10, 180);
+            }
+
+             // Signature
+            if (settings.signatureUrl) {
+                try {
+                    doc.addImage(settings.signatureUrl, 'PNG', margin, 250, 60, 30); // Adjust position as needed
+                    doc.text("Authorized Signature", margin, 285); // Signature label
+                } catch (e) {
+                    console.error("Error adding signature:", e);
+                    doc.text("Signature Failed to Load", margin, 270);
+                }
             }
 
             // Save the PDF

@@ -26,8 +26,8 @@ class User(db.Model):
     # Relationships
     pdf_codes = db.relationship('UserPDFCode', foreign_keys='UserPDFCode.user_id', backref='user', lazy=True, cascade='all, delete-orphan')
     pdf_requests = db.relationship('PDFRequest', backref='user', lazy=True, cascade='all, delete-orphan')
-    sent_messages = db.relationship('Message', foreign_keys='Message.sender_id', backref='sender', lazy=True)
-    received_messages = db.relationship('Message', foreign_keys='Message.recipient_id', backref='recipient', lazy=True)
+    sent_messages = db.relationship('Message', foreign_keys='Message.sender_id', backref='sender', lazy=True, cascade='all, delete-orphan')
+    received_messages = db.relationship('Message', foreign_keys='Message.recipient_id', backref='recipient', lazy=True, cascade='all, delete-orphan')
     uploaded_pdfs = db.relationship('UserPDFCode', foreign_keys='UserPDFCode.uploaded_by_admin_id', backref='uploader', lazy=True)
 
     def set_password(self, password):
@@ -81,13 +81,13 @@ class PDFRequest(db.Model):
 class Message(db.Model):
     """Model for in-site messaging system"""
     id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     subject = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)  # Allows HTML content
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    parent_message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=True)
+    parent_message_id = db.Column(db.Integer, db.ForeignKey('message.id', ondelete='CASCADE'), nullable=True)
 
     # Self-referential relationship for message threads
     replies = db.relationship('Message', backref=db.backref('parent', remote_side=[id]), lazy=True)

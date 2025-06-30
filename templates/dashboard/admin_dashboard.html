@@ -179,6 +179,9 @@
                                             <button type="button" class="btn btn-sm btn-info" onclick="messageUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
                                                 <i class="fas fa-envelope"></i> Message
                                             </button>
+                                            <button type="button" class="btn btn-sm btn-secondary" onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.email }}', '{{ user.first_name }}', '{{ user.last_name }}')">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
                                             {% if user.is_verified %}
                                             <button type="button" class="btn btn-sm btn-warning" onclick="toggleVerification({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}', false)">
                                                 <i class="fas fa-user-times"></i> Unverify
@@ -188,6 +191,9 @@
                                                 <i class="fas fa-user-check"></i> Verify
                                             </button>
                                             {% endif %}
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -520,6 +526,43 @@
         </div>
     </div>
 
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editUserForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="editUserId">
+                        <div class="mb-3">
+                            <label for="editUsername" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="editUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editFirstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="editFirstName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editLastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="editLastName" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update User</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Colorful Footer -->
     <footer class="mt-5" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 50%, #ff9ff3 100%); color: white;">
         <div class="container py-4">
@@ -822,6 +865,72 @@
                 }
             } catch (error) {
                 showAlert('SMTP test failed: ' + error.message, 'error');
+            }
+        });
+
+        // Edit user
+        function editUser(userId, username, email, firstName, lastName) {
+            document.getElementById('editUserId').value = userId;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editFirstName').value = firstName;
+            document.getElementById('editLastName').value = lastName;
+            new bootstrap.Modal(document.getElementById('editUserModal')).show();
+        }
+
+        // Delete user
+        function deleteUser(userId, userName) {
+            if (confirm(`Are you sure you want to delete user ${userName}? This action cannot be undone.`)) {
+                fetch(`/api/admin/delete-user/${userId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert(data.message, 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showAlert(data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    showAlert('User deletion failed: ' + error.message, 'error');
+                });
+            }
+        }
+
+        // Handle edit user form submission
+        document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const userId = document.getElementById('editUserId').value;
+            const userData = {
+                username: document.getElementById('editUsername').value,
+                email: document.getElementById('editEmail').value,
+                first_name: document.getElementById('editFirstName').value,
+                last_name: document.getElementById('editLastName').value
+            };
+            
+            try {
+                const response = await fetch(`/api/admin/edit-user/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('User update failed: ' + error.message, 'error');
             }
         });
 

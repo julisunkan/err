@@ -15,28 +15,23 @@
                 <i class="fas fa-file-invoice"></i> Business Documents
             </a>
 
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-user"></i> {{ user.first_name }} {{ user.last_name }}
-                        {% if unread_messages > 0 %}
-                        <span class="badge bg-danger">{{ unread_messages }}</span>
-                        {% endif %}
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ url_for('messages') }}">
-                            <i class="fas fa-envelope"></i> Messages
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item" href="/"><i class="fas fa-file-invoice"></i> Document Generator</a></li>
+                        <li><a class="dropdown-item" href="/messages"><i class="fas fa-envelope"></i> Messages
                             {% if unread_messages > 0 %}
-                            <span class="badge bg-danger ms-2">{{ unread_messages }}</span>
+                            <span class="badge bg-danger ms-1">{{ unread_messages }}</span>
                             {% endif %}
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ url_for('logout') }}">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </a></li>
+                        <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                     </ul>
-                </div>
-            </div>
+                </li>
+            </ul>
         </div>
     </nav>
 
@@ -58,7 +53,7 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h4>{{ pdf_codes|length }}</h4>
-                                <p class="mb-0">PDF Documents</p>
+                                <p class="mb-0">PDF Codes</p>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-file-pdf fa-2x"></i>
@@ -118,7 +113,7 @@
         <ul class="nav nav-tabs" id="dashboardTabs">
             <li class="nav-item">
                 <a class="nav-link active" id="documents-tab" data-bs-toggle="tab" href="#documents">
-                    <i class="fas fa-file-pdf"></i> My Documents
+                    <i class="fas fa-file-pdf"></i> My Codes
                 </a>
             </li>
             <li class="nav-item">
@@ -138,7 +133,7 @@
             <div class="tab-pane fade show active" id="documents">
                 <div class="card">
                     <div class="card-header">
-                        <h5><i class="fas fa-file-pdf"></i> Your PDF Documents</h5>
+                        <h5><i class="fas fa-file-pdf"></i> Your Requested Codes</h5>
                     </div>
                     <div class="card-body">
                         {% if pdf_codes %}
@@ -187,7 +182,7 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5><i class="fas fa-paper-plane"></i> Document Requests</h5>
                         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestModal">
-                            <i class="fas fa-plus"></i> New Request
+                            <i class="fas fa-plus"></i> New Codes Request
                         </button>
                     </div>
                     <div class="card-body">
@@ -232,7 +227,7 @@
                         <div class="text-center py-4">
                             <i class="fas fa-paper-plane fa-3x text-muted mb-3"></i>
                             <h5>No requests yet</h5>
-                            <p class="text-muted">Create your first document request!</p>
+                            <p class="text-muted">Create your first codes request!</p>
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestModal">
                                 <i class="fas fa-plus"></i> Create Request
                             </button>
@@ -296,7 +291,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">New Document Request</h5>
+                    <h5 class="modal-title">New Codes Request</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="requestForm">
@@ -435,6 +430,15 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize Bootstrap dropdowns
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all dropdowns
+            var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                return new bootstrap.Dropdown(dropdownToggleEl);
+            });
+        });
+    </script>
 </body>
 </html>

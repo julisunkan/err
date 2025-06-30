@@ -1188,5 +1188,81 @@ def test_smtp():
         logging.error(f"Error testing SMTP: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to test SMTP settings'}), 500
 
+@app.route('/api/admin/edit-user/<int:user_id>', methods=['PUT'])
+@admin_required
+def edit_user(user_id):
+    """Edit user details"""
+    try:
+        data = request.get_json()
+        
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'success': False, 'error': 'User not found'}), 404
+        
+        if user.is_admin:
+            return jsonify({'success': False, 'error': 'Cannot edit admin users'}), 400
+        
+        # Check if username or email already exists (excluding current user)
+        existing_username = User.query.filter(User.username == data.get('username'), User.id != user_id).first()
+        if existing_username:
+            return jsonify({'success': False, 'error': 'Username already exists'}), 400
+        
+        existing_email = User.query.filter(User.email == data.get('email'), User.id != user_id).first()
+        if existing_email:
+            return jsonify({'success': False, 'error': 'Email already exists'}), 400
+        
+        # Update user details
+        user.username = data.get('username', user.username)
+        user.email = data.get('email', user.email)
+        user.first_name = data.get('first_name', user.first_name)
+        user.last_name = data.get('last_name', user.last_name)
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'User updated successfully'})
+        
+    except Exception as e:
+        logging.error(f"Error editing user: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to update user'}), 500
+
+@app.route('/api/admin/delete-user/<int:user_id>', methods=['DELETE'])
+@admin_required
+def delete_user(user_id):
+    """Delete user and all related data"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'success': False, 'error': 'User not found'}), 404
+        
+        if user.is_admin:
+            return jsonify({'success': False, 'error': 'Cannot delete admin users'}), 400
+        
+        user_name = f"{user.first_name} {user.last_name}"
+        
+        # Manually delete related records that might cause foreign key issues
+        # Delete messages where user is sender or recipient
+        Message.query.filter_by(sender_id=user_id).delete()
+        Message.query.filter_by(recipient_id=user_id).delete()
+        
+        # Delete user business settings
+        UserBusinessSettings.query.filter_by(user_id=user_id).delete()
+        
+        # Delete client settings
+        ClientSettings.query.filter_by(user_id=user_id).delete()
+        
+        # Delete download codes
+        DownloadCode.query.filter_by(user_id=user_id).delete()
+        
+        # Delete user (remaining cascades will handle PDF codes and requests)
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': f'User {user_name} deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting user: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to delete user'}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

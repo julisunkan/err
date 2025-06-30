@@ -391,7 +391,16 @@
         // Reply to message
         function replyToMessage(recipientId, recipientName, subject, parentId) {
             document.getElementById('composeForm').reset();
-            document.getElementById('composeRecipient').value = recipientId;
+            
+            // Load admins first if needed, then set recipient
+            if (document.getElementById('composeRecipient').options.length <= 1) {
+                loadAdmins().then(() => {
+                    document.getElementById('composeRecipient').value = recipientId;
+                });
+            } else {
+                document.getElementById('composeRecipient').value = recipientId;
+            }
+            
             document.getElementById('composeSubject').value = subject;
             document.getElementById('composeParentId').value = parentId || '';
             new bootstrap.Modal(document.getElementById('composeModal')).show();
@@ -399,13 +408,17 @@
 
         // Reply to current message
         function replyToCurrentMessage() {
-            document.getElementById('viewMessageModal').querySelector('.btn-close').click();
-            replyToMessage(
-                currentMessageData.senderId, 
-                currentMessageData.fromName, 
-                currentMessageData.subject.startsWith('Re: ') ? currentMessageData.subject : 'Re: ' + currentMessageData.subject,
-                currentMessageData.messageId
-            );
+            bootstrap.Modal.getInstance(document.getElementById('viewMessageModal')).hide();
+            
+            // Wait a moment for modal to close before opening new one
+            setTimeout(() => {
+                replyToMessage(
+                    currentMessageData.senderId, 
+                    currentMessageData.fromName, 
+                    currentMessageData.subject.startsWith('Re: ') ? currentMessageData.subject : 'Re: ' + currentMessageData.subject,
+                    currentMessageData.messageId
+                );
+            }, 300);
         }
 
         // Handle compose form submission
