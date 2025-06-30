@@ -87,4 +87,6 @@ window.addEventListener('error', function(event) {
     showError('An unexpected error occurred. Please refresh the page.');
 });
 
+// PDF generation function (moved to index.html)
+
 console.log('App.js loaded successfully');

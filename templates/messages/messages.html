@@ -351,8 +351,22 @@
                 }
             }
             
-            // Load message content (you'd need to add an API endpoint for this)
+            // Load message content
             document.getElementById('viewMessageContent').innerHTML = 'Loading message content...';
+            
+            try {
+                const response = await fetch(`/api/get-message/${messageId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('viewMessageContent').innerHTML = result.content;
+                } else {
+                    document.getElementById('viewMessageContent').innerHTML = 'Error loading message content.';
+                }
+            } catch (error) {
+                console.error('Error loading message content:', error);
+                document.getElementById('viewMessageContent').innerHTML = 'Error loading message content.';
+            }
             
             // Show reply button if user can reply
             const canReply = {{ user.is_admin|lower }} || fromName.includes('Admin');

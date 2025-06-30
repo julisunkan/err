@@ -1,4 +1,3 @@
-
 from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -23,29 +22,29 @@ class User(db.Model):
     reset_token_expires = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
-    
+
     # Relationships
     pdf_codes = db.relationship('UserPDFCode', foreign_keys='UserPDFCode.user_id', backref='user', lazy=True, cascade='all, delete-orphan')
     pdf_requests = db.relationship('PDFRequest', backref='user', lazy=True, cascade='all, delete-orphan')
     sent_messages = db.relationship('Message', foreign_keys='Message.sender_id', backref='sender', lazy=True)
     received_messages = db.relationship('Message', foreign_keys='Message.recipient_id', backref='recipient', lazy=True)
     uploaded_pdfs = db.relationship('UserPDFCode', foreign_keys='UserPDFCode.uploaded_by_admin_id', backref='uploader', lazy=True)
-    
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-    
+
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-    
+
     def generate_verification_token(self):
         self.verification_token = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
         return self.verification_token
-    
+
     def generate_reset_token(self):
         self.reset_token = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
         self.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
         return self.reset_token
-    
+
     def __repr__(self):
         return f'<User {self.username}>'
 
@@ -61,7 +60,7 @@ class UserPDFCode(db.Model):
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     downloaded_at = db.Column(db.DateTime, nullable=True)
     download_count = db.Column(db.Integer, default=0)
-    
+
     def __repr__(self):
         return f'<UserPDFCode {self.filename}>'
 
@@ -75,7 +74,7 @@ class PDFRequest(db.Model):
     admin_response = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     def __repr__(self):
         return f'<PDFRequest {self.title}>'
 
@@ -89,26 +88,23 @@ class Message(db.Model):
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     parent_message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=True)
-    
+
     # Self-referential relationship for message threads
     replies = db.relationship('Message', backref=db.backref('parent', remote_side=[id]), lazy=True)
-    
+
     def __repr__(self):
         return f'<Message {self.subject}>'
 
 class DownloadCode(db.Model):
-    """Model for storing one-time download codes"""
+    """Model for one-time download codes"""
     id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(8), unique=True, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    document_data = db.Column(db.Text, nullable=True)  # JSON data for the document
+    code = db.Column(db.String(20), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Make nullable for bulk codes
+    document_data = db.Column(db.Text, nullable=True)  # JSON data for document
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False)
     used_at = db.Column(db.DateTime, nullable=True)
-
-    # Relationship
-    user = db.relationship('User', backref='download_codes')
 
     def __repr__(self):
         return f'<DownloadCode {self.code}>'

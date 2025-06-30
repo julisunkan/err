@@ -1,21 +1,20 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Download Code Generator</title>
-    
+
     <!-- PWA Meta Tags -->
     <meta name="description" content="Generate download codes for business documents">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="DocGen">
-    
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
@@ -49,7 +48,8 @@
                         <p class="lead mb-4">
                             Generate secure one-time download codes for PDF documents
                         </p>
-                        
+
+                        <!-- Success Display -->
                         <div id="codeDisplay" class="d-none">
                             <div class="alert alert-success mb-4">
                                 <h5 class="alert-heading">
@@ -60,12 +60,15 @@
                                     <h6>Generated <span id="codeCount"></span> codes</h6>
                                     <div id="codesList" class="mt-3 mb-3" style="max-height: 200px; overflow-y: auto;">
                                     </div>
-                                    <div class="d-flex gap-2 justify-content-center">
+                                    <div class="d-flex gap-2 justify-content-center flex-wrap">
                                         <button class="btn btn-outline-success btn-sm" id="copyAllCodesBtn">
                                             <i class="fas fa-copy me-1"></i>Copy All Codes
                                         </button>
                                         <button class="btn btn-outline-primary btn-sm" id="downloadPdfBtn">
                                             <i class="fas fa-file-pdf me-1"></i>Download PDF
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" id="generateMoreBtn">
+                                            <i class="fas fa-plus me-1"></i>Generate More
                                         </button>
                                     </div>
                                 </div>
@@ -79,34 +82,36 @@
                             </div>
                         </div>
 
+                        <!-- Generation Form -->
                         <div id="generateSection">
                             <div class="mb-4">
-                                <label for="codeQuantity" class="form-label">Number of codes to generate:</label>
-                                <select class="form-select" id="codeQuantity">
+                                <label for="codeQuantity" class="form-label fw-bold">Number of codes to generate:</label>
+                                <select class="form-select form-select-lg" id="codeQuantity">
                                     <option value="1">1 Code</option>
-                                    <option value="10">10 Codes</option>
+                                    <option value="10" selected>10 Codes</option>
                                     <option value="20">20 Codes</option>
                                     <option value="50">50 Codes</option>
                                     <option value="100">100 Codes</option>
                                 </select>
                             </div>
-                            
-                            <button class="btn btn-primary btn-lg" id="generateCodeBtn">
+
+                            <button class="btn btn-primary btn-lg px-5" id="generateCodeBtn">
                                 <i class="fas fa-key me-2"></i>Generate Codes
                             </button>
                             <p class="text-muted mt-3">
                                 <small>
                                     <i class="fas fa-info-circle me-1"></i>
-                                    Each code can only be used once and expires in 1 year
+                                    Each code can only be used once and expires in <strong>1 year</strong>
                                 </small>
                             </p>
                         </div>
 
+                        <!-- Loading Spinner -->
                         <div id="loadingSpinner" class="d-none">
-                            <div class="spinner-border text-primary" role="status">
+                            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
-                            <p class="mt-2">Generating codes...</p>
+                            <p class="mt-2 fw-bold">Generating codes...</p>
                         </div>
                     </div>
                 </div>
@@ -120,12 +125,12 @@
                     </div>
                     <div class="card-body">
                         <ol class="mb-0">
-                            <li class="mb-2">Select the number of codes to generate</li>
-                            <li class="mb-2">Click "Generate Codes" to create download codes</li>
-                            <li class="mb-2">Copy codes or download them as PDF</li>
-                            <li class="mb-2">Go back to the main app and create your document</li>
+                            <li class="mb-2">Select the number of codes to generate (1, 10, 20, 50, or 100)</li>
+                            <li class="mb-2">Click "Generate Codes" to create secure download codes</li>
+                            <li class="mb-2">Copy codes to clipboard or download them as a PDF document</li>
+                            <li class="mb-2">Go back to the main app and create your business document</li>
                             <li class="mb-2">Enter any valid code in the "Download Code" field</li>
-                            <li class="mb-0">Click "Verify & Download PDF" to get your document</li>
+                            <li class="mb-0">Click "Verify & Download PDF" to generate and download your document</li>
                         </ol>
                     </div>
                 </div>
@@ -134,8 +139,23 @@
     </div>
 
     <!-- Footer -->
-    <footer class="bg-dark text-white text-center py-3 mt-5">
+    <footer class="bg-dark text-white text-center py-4 mt-5">
         <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6><i class="fas fa-key me-2"></i>Code Generator</h6>
+                    <p class="small mb-0">Secure one-time download codes for your business documents.</p>
+                </div>
+                <div class="col-md-4">
+                    <h6><i class="fas fa-shield-alt me-2"></i>Security</h6>
+                    <p class="small mb-0">All codes are cryptographically secure and expire automatically.</p>
+                </div>
+                <div class="col-md-4">
+                    <h6><i class="fas fa-clock me-2"></i>Validity</h6>
+                    <p class="small mb-0">Generated codes are valid for one full year from creation.</p>
+                </div>
+            </div>
+            <hr class="my-3">
             <p class="mb-0">&copy; 2025 Business Documents Generator. All rights reserved.</p>
         </div>
     </footer>
@@ -159,11 +179,27 @@
         function showToast(message, type = 'info') {
             const toast = document.getElementById('alertToast');
             const toastMessage = document.getElementById('toastMessage');
-            
+
             toastMessage.textContent = message;
-            toast.className = `toast bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} text-white`;
-            
-            const bsToast = new bootstrap.Toast(toast);
+
+            // Remove existing classes
+            toast.classList.remove('bg-success', 'bg-danger', 'bg-info', 'bg-warning');
+
+            // Add appropriate class
+            if (type === 'success') {
+                toast.classList.add('bg-success', 'text-white');
+            } else if (type === 'error') {
+                toast.classList.add('bg-danger', 'text-white');
+            } else if (type === 'warning') {
+                toast.classList.add('bg-warning', 'text-dark');
+            } else {
+                toast.classList.add('bg-info', 'text-white');
+            }
+
+            const bsToast = new bootstrap.Toast(toast, {
+                autohide: true,
+                delay: 5000
+            });
             bsToast.show();
         }
 
@@ -173,11 +209,12 @@
             const generateSection = document.getElementById('generateSection');
             const codeDisplay = document.getElementById('codeDisplay');
             const quantity = parseInt(document.getElementById('codeQuantity').value);
-            
+
             // Show loading
             generateSection.classList.add('d-none');
+            codeDisplay.classList.add('d-none');
             loadingSpinner.classList.remove('d-none');
-            
+
             try {
                 const response = await fetch('/api/generate-bulk-codes', {
                     method: 'POST',
@@ -186,43 +223,60 @@
                     },
                     body: JSON.stringify({ quantity: quantity })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     generatedCodes = data.codes;
-                    
+
                     // Display the generated codes
                     document.getElementById('codeCount').textContent = generatedCodes.length;
-                    
+
                     const codesList = document.getElementById('codesList');
                     codesList.innerHTML = '';
-                    
+
                     generatedCodes.forEach((codeInfo, index) => {
                         const codeElement = document.createElement('div');
-                        codeElement.className = 'code-item p-2 mb-1 bg-light rounded';
-                        codeElement.innerHTML = `<strong>${index + 1}:</strong> ${codeInfo.code}`;
+                        codeElement.className = 'code-item p-2 mb-1 bg-light rounded border';
+                        codeElement.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><strong>${index + 1}:</strong> <code class="text-primary">${codeInfo.code}</code></span>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('${codeInfo.code}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        `;
                         codesList.appendChild(codeElement);
                     });
-                    
+
                     // Format expiration time
                     const expirationDate = new Date(data.expires_at);
                     document.getElementById('expirationTime').textContent = expirationDate.toLocaleString();
-                    
+
                     // Show code display
                     loadingSpinner.classList.add('d-none');
                     codeDisplay.classList.remove('d-none');
-                    
+
                     showToast(`${generatedCodes.length} download codes generated successfully!`, 'success');
                 } else {
                     throw new Error(data.error || 'Failed to generate codes');
                 }
             } catch (error) {
+                console.error('Generation error:', error);
                 loadingSpinner.classList.add('d-none');
                 generateSection.classList.remove('d-none');
                 showToast('Error: ' + error.message, 'error');
             }
         });
+
+        // Copy single code to clipboard
+        window.copyToClipboard = function(code) {
+            navigator.clipboard.writeText(code).then(function() {
+                showToast(`Code "${code}" copied to clipboard!`, 'success');
+            }).catch(function() {
+                showToast('Failed to copy code', 'error');
+            });
+        }
 
         // Copy all codes to clipboard
         document.getElementById('copyAllCodesBtn').addEventListener('click', function() {
@@ -234,12 +288,23 @@
             });
         });
 
+        // Generate more codes
+        document.getElementById('generateMoreBtn').addEventListener('click', function() {
+            document.getElementById('codeDisplay').classList.add('d-none');
+            document.getElementById('generateSection').classList.remove('d-none');
+            generatedCodes = [];
+        });
+
         // Download codes as PDF
         document.getElementById('downloadPdfBtn').addEventListener('click', function() {
             try {
+                if (typeof window.jspdf === 'undefined') {
+                    throw new Error('PDF library not loaded. Please refresh the page and try again.');
+                }
+
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                
+
                 // Set document properties
                 doc.setProperties({
                     title: 'Download Codes',
@@ -248,53 +313,97 @@
                     creator: 'Business Documents Generator'
                 });
 
-                // Add header
-                doc.setFontSize(20);
-                doc.setFont(undefined, 'bold');
+                // Add header with styling
+                doc.setFontSize(24);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(0, 102, 204);
                 doc.text('Download Codes', 20, 30);
-                
+
+                // Add generation info
                 doc.setFontSize(12);
-                doc.setFont(undefined, 'normal');
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(0, 0, 0);
                 doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 45);
                 doc.text(`Total Codes: ${generatedCodes.length}`, 20, 55);
                 doc.text(`Expires: ${new Date(generatedCodes[0].expires_at).toLocaleString()}`, 20, 65);
-                
-                // Add codes
-                let yPos = 85;
+                doc.text(`Validity: 1 Year from generation`, 20, 75);
+
+                // Add line separator
+                doc.setDrawColor(200, 200, 200);
+                doc.line(20, 85, 190, 85);
+
+                // Add codes with better formatting
+                let yPos = 100;
                 const pageHeight = doc.internal.pageSize.height;
-                
+                const codesPerPage = Math.floor((pageHeight - 120) / 15);
+
                 generatedCodes.forEach((codeInfo, index) => {
-                    if (yPos > pageHeight - 30) {
+                    if (yPos > pageHeight - 40) {
                         doc.addPage();
                         yPos = 30;
+
+                        // Add header on new page
+                        doc.setFontSize(16);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('Download Codes (Continued)', 20, yPos);
+                        yPos += 20;
                     }
-                    
-                    doc.setFont(undefined, 'bold');
-                    doc.text(`${index + 1}.`, 20, yPos);
-                    doc.setFont(undefined, 'normal');
-                    doc.text(codeInfo.code, 35, yPos);
-                    
-                    yPos += 12;
+
+                    // Code number
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`${index + 1}.`, 25, yPos);
+
+                    // Code value with monospace styling
+                    doc.setFont('courier', 'bold');
+                    doc.setFontSize(12);
+                    doc.text(codeInfo.code, 40, yPos);
+
+                    // Add background rectangle for code
+                    doc.setFillColor(245, 245, 245);
+                    doc.rect(38, yPos - 4, 50, 8, 'F');
+                    doc.text(codeInfo.code, 40, yPos);
+
+                    yPos += 15;
                 });
-                
-                // Add footer
+
+                // Add footer to all pages
                 const totalPages = doc.getNumberOfPages();
                 for (let i = 1; i <= totalPages; i++) {
                     doc.setPage(i);
                     doc.setFontSize(10);
-                    doc.setTextColor(100);
+                    doc.setTextColor(100, 100, 100);
                     doc.text(`Page ${i} of ${totalPages}`, 180, pageHeight - 10);
                     doc.text('Business Documents Generator', 20, pageHeight - 10);
+                    doc.text('Each code is valid for one use only', 20, pageHeight - 20);
                 }
-                
+
                 // Save the PDF
-                const fileName = `download_codes_${new Date().toISOString().split('T')[0]}.pdf`;
+                const fileName = `download_codes_${generatedCodes.length}_${new Date().toISOString().split('T')[0]}.pdf`;
                 doc.save(fileName);
-                
+
                 showToast('PDF downloaded successfully!', 'success');
             } catch (error) {
                 console.error('Error generating PDF:', error);
                 showToast('Error generating PDF: ' + error.message, 'error');
+            }
+        });
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Code generator page loaded');
+
+            // Check if jsPDF is loaded
+            if (typeof window.jspdf === 'undefined') {
+                console.warn('jsPDF not loaded, PDF functionality may not work');
+            }
+        });
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const generateBtn = document.getElementById('generateBtn');
+            if (generateBtn) {
+                generateBtn.addEventListener('click', generateCodes);
             }
         });
     </script>

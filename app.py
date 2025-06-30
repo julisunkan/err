@@ -5,8 +5,8 @@ import logging
 import secrets
 import string
 import smtplib
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
@@ -98,12 +98,12 @@ def send_email(to_email, subject, body, is_html=False):
             logging.error("No active SMTP settings found")
             return False
         
-        msg = MimeMultipart()
+        msg = MIMEMultipart()
         msg['From'] = f"{smtp_settings.from_name or 'Business Docs'} <{smtp_settings.from_email}>"
         msg['To'] = to_email
         msg['Subject'] = subject
         
-        msg.attach(MimeText(body, 'html' if is_html else 'plain'))
+        msg.attach(MIMEText(body, 'html' if is_html else 'plain'))
         
         server = smtplib.SMTP(smtp_settings.smtp_server, smtp_settings.smtp_port)
         if smtp_settings.use_tls:
@@ -286,10 +286,11 @@ def forgot_password():
             
             email_sent = send_email(user.email, subject, body)
             
-            response_data = {'success': True, 'message': 'Password reset email sent!'}
-            if not email_sent:
-                response_data['message'] += ' (Email sending failed, please contact administrator)'
-                response_data['reset_token'] = reset_token  # Only show in dev if email failed
+            if email_sent:
+                response_data = {'success': True, 'message': 'Password reset email sent! Please check your email.'}
+            else:
+                response_data = {'success': False, 'error': 'Failed to send password reset email. Please contact administrator.'}
+                logging.error(f"Failed to send reset email to {user.email}")
                 logging.info(f"Reset token for {user.email}: {reset_token}")
             
             return jsonify(response_data)
@@ -555,6 +556,32 @@ def mark_message_read(message_id):
         logging.error(f"Error marking message as read: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to mark message as read'}), 500
 
+@app.route('/api/get-message/<int:message_id>')
+@login_required
+def get_message_content(message_id):
+    """Get message content"""
+    try:
+        message = Message.query.get(message_id)
+        
+        if not message:
+            return jsonify({'success': False, 'error': 'Message not found'}), 404
+        
+        # Check if user can view this message
+        if message.recipient_id != session['user_id'] and message.sender_id != session['user_id']:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        return jsonify({
+            'success': True,
+            'content': message.content,
+            'subject': message.subject,
+            'sender': f"{message.sender.first_name} {message.sender.last_name}",
+            'created_at': message.created_at.strftime('%Y-%m-%d %H:%M')
+        })
+        
+    except Exception as e:
+        logging.error(f"Error getting message content: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get message content'}), 500
+
 @app.route('/api/get-admins')
 @login_required
 def get_admins():
@@ -566,6 +593,7 @@ def get_admins():
 
 # Original routes for document generation
 @app.route('/code-generator')
+@admin_required
 def code_generator():
     """Page for generating download codes"""
     return render_template('code_generator.html')
@@ -575,7 +603,15 @@ def code_generator():
 def generate_code():
     """Generate a one-time download code for a user"""
     try:
-        data = request.get_json()
+        # Handle both JSON and form data
+        try:
+            if request.content_type and 'application/json' in request.content_type:
+                data = request.get_json() or {}
+            else:
+                data = request.form.to_dict()
+        except Exception:
+            data = {}
+            
         user_id = data.get('user_id')
         document_data = data.get('document_data')
         
@@ -666,33 +702,49 @@ def verify_code():
         if download_code.expires_at < datetime.utcnow():
             return jsonify({'success': False, 'error': 'Code has expired'}), 400
         
-        # Get user's business settings
-        user = download_code.user
-        user_settings = UserBusinessSettings.query.filter_by(user_id=user.id).first()
-        
         # Prepare response data
         response_data = {
             'success': True,
             'message': 'Code verified successfully',
-            'user_info': {
-                'name': f"{user.first_name} {user.last_name}",
-                'email': user.email
-            },
             'business_settings': {}
         }
         
-        # Add business settings if available
-        if user_settings:
-            response_data['business_settings'] = {
-                'businessName': user_settings.business_name,
-                'businessAddress': user_settings.business_address,
-                'businessPhone': user_settings.business_phone,
-                'businessEmail': user_settings.business_email,
-                'businessLogoUrl': user_settings.business_logo_url,
-                'signatureUrl': user_settings.signature_url,
-                'taxRate': user_settings.tax_rate,
-                'currency': user_settings.currency
+        # Get user's business settings if user is associated with code
+        if download_code.user_id:
+            user = download_code.user
+            user_settings = UserBusinessSettings.query.filter_by(user_id=user.id).first()
+            
+            response_data['user_info'] = {
+                'name': f"{user.first_name} {user.last_name}",
+                'email': user.email
             }
+            
+            # Add business settings if available
+            if user_settings:
+                response_data['business_settings'] = {
+                    'businessName': user_settings.business_name,
+                    'businessAddress': user_settings.business_address,
+                    'businessPhone': user_settings.business_phone,
+                    'businessEmail': user_settings.business_email,
+                    'businessLogoUrl': user_settings.business_logo_url,
+                    'signatureUrl': user_settings.signature_url,
+                    'taxRate': user_settings.tax_rate,
+                    'currency': user_settings.currency
+                }
+        else:
+            # For bulk codes without specific user, use default settings
+            default_settings = BusinessSettings.query.first()
+            if default_settings:
+                response_data['business_settings'] = {
+                    'businessName': default_settings.business_name,
+                    'businessAddress': default_settings.business_address,
+                    'businessPhone': default_settings.business_phone,
+                    'businessEmail': default_settings.business_email,
+                    'businessLogoUrl': default_settings.business_logo_url,
+                    'signatureUrl': default_settings.signature_url,
+                    'taxRate': default_settings.tax_rate,
+                    'currency': default_settings.currency
+                }
         
         # Add document data if available
         if download_code.document_data:

@@ -21,6 +21,9 @@
 </head>
 <body>
     <div class="container-fluid">
+        <!-- Notification container -->
+        <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 1050;"></div>
+
         <!-- Navigation Header -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
             <div class="container">
@@ -62,7 +65,7 @@
                     </button>
                 </li>
                 {% endif %}
-                {% if session.is_admin %}
+                {% if session.get('is_admin') %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="codes-tab" data-bs-toggle="tab" data-bs-target="#codes" type="button" role="tab">
                         <i class="fas fa-key me-2"></i>Download Codes
@@ -206,10 +209,23 @@
                                         </div>
 
                                         <!-- Action Buttons -->
-                                        <div class="d-grid gap-2 mt-4">
-                                            <button type="button" class="btn btn-primary" id="generatePDF">
-                                                <i class="fas fa-file-pdf me-2"></i>Generate PDF
-                                            </button>
+                                        <div class="mt-4">
+                                            <div class="row">
+                                                <div class="col-md-8">
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control" id="pdfDownloadCode" placeholder="Enter download code" maxlength="8" style="text-transform: uppercase;">
+                                                        <button type="button" class="btn btn-outline-secondary" id="verifyCodeBtn">
+                                                            <i class="fas fa-check me-1"></i>Verify
+                                                        </button>
+                                                    </div>
+                                                    <small class="text-muted">Enter your 8-character download code to generate PDF</small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button type="button" class="btn btn-primary w-100" id="generatePDF" disabled>
+                                                        <i class="fas fa-file-pdf me-2"></i>Generate PDF
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </form>
                                 </div>
@@ -324,7 +340,7 @@
                 {% endif %}
 
                 <!-- Download Codes Tab (Admin Only) -->
-                {% if session.is_admin %}
+                {% if session.get('is_admin') %}
                 <div class="tab-pane fade" id="codes" role="tabpanel">
                     <div class="row">
                         <div class="col-md-6">
@@ -469,6 +485,57 @@
         </div>
     </div>
 
+    <!-- Colorful Footer -->
+    <footer class="mt-5" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+        <div class="container py-4">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6><i class="fas fa-file-pdf me-2"></i>Document Generator</h6>
+                    <p class="small">Create professional business documents with ease. Invoices, quotes, receipts and more.</p>
+                </div>
+                <div class="col-md-4">
+                    <h6><i class="fas fa-rocket me-2"></i>Features</h6>
+                    <div class="small">
+                        <span class="d-block">✓ Professional Templates</span>
+                        <span class="d-block">✓ Secure Download Codes</span>
+                        <span class="d-block">✓ Business Settings</span>
+                        <span class="d-block">✓ Multiple Document Types</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h6><i class="fas fa-shield-alt me-2"></i>Security</h6>
+                    <div class="small">
+                        <span class="badge bg-light text-dark mb-2 d-block w-fit">
+                            <i class="fas fa-lock me-1"></i>Secure Authentication
+                        </span>
+                        <span class="badge bg-light text-dark mb-2 d-block w-fit">
+                            <i class="fas fa-key me-1"></i>One-time Codes
+                        </span>
+                        <span class="badge bg-light text-dark d-block w-fit">
+                            <i class="fas fa-user-shield me-1"></i>Data Protection
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-3" style="border-color: rgba(255,255,255,0.2);">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <p class="mb-0 small">&copy; 2025 Business Documents Generator. All rights reserved.</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="small">
+                        <a href="/login" class="text-white text-decoration-none me-3">
+                            <i class="fas fa-sign-in-alt me-1"></i>Login
+                        </a>
+                        <a href="/register" class="text-white text-decoration-none">
+                            <i class="fas fa-user-plus me-1"></i>Register
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
     <!-- Forgot Password Modal -->
     <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
         <div class="modal-dialog">
@@ -494,8 +561,18 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jsPDF -->
+    <!-- Include jsPDF library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        // Ensure jsPDF is loaded before initializing PDF generator
+        window.addEventListener('load', function() {
+            if (typeof window.jspdf === 'undefined') {
+                console.error('jsPDF library failed to load');
+                return;
+            }
+            console.log('jsPDF library loaded successfully');
+        });
+    </script>
     <script>
         // Ensure jsPDF is available globally
         window.jsPDF = window.jspdf?.jsPDF || window.jsPDF;
@@ -587,13 +664,28 @@
             });
 
             // Generate PDF button
-            document.getElementById('generatePDF').addEventListener('click', generatePDF);
+            const generatePDFBtn = document.getElementById('generatePDF');
+            if (generatePDFBtn) {
+                generatePDFBtn.addEventListener('click', generatePDF);
+            }
+
+            // Verify code button
+            const verifyCodeBtn = document.getElementById('verifyCodeBtn');
+            if (verifyCodeBtn) {
+                verifyCodeBtn.addEventListener('click', verifyDownloadCode);
+            }
 
             // Generate download code button
-            document.getElementById('generateCode').addEventListener('click', generateDownloadCode);
+            const generateCodeBtn = document.getElementById('generateCode');
+            if (generateCodeBtn) {
+                generateCodeBtn.addEventListener('click', generateDownloadCode);
+            }
 
             // Download form
-            document.getElementById('downloadForm').addEventListener('submit', handleDownload);
+            const downloadForm = document.getElementById('downloadForm');
+            if (downloadForm) {
+                downloadForm.addEventListener('submit', handleDownload);
+            }
 
             // Login form
             const loginForm = document.getElementById('loginForm');
@@ -613,25 +705,49 @@
                 forgotForm.addEventListener('submit', handleForgotPassword);
             }
 
-            // Download code input formatting
-            document.getElementById('downloadCode').addEventListener('input', function(e) {
-                e.target.value = e.target.value.toUpperCase();
-            });
+            // PDF Download code input formatting
+            const pdfDownloadCodeInput = document.getElementById('pdfDownloadCode');
+            if (pdfDownloadCodeInput) {
+                pdfDownloadCodeInput.addEventListener('input', function(e) {
+                    e.target.value = e.target.value.toUpperCase();
+                });
+            }
 
-             // Settings form
-             const settingsForm = document.getElementById('settingsForm');
+            // Download code input formatting (for admin codes tab)
+            const downloadCodeInput = document.getElementById('downloadCode');
+            if (downloadCodeInput) {
+                downloadCodeInput.addEventListener('input', function(e) {
+                    e.target.value = e.target.value.toUpperCase();
+                });
+            }
+
+            // Settings form
+            const settingsForm = document.getElementById('settingsForm');
             if (settingsForm) {
                 settingsForm.addEventListener('submit', handleSettingsSubmit);
             }
 
             // Export user settings
-            document.getElementById('exportUserSettings').addEventListener('click', exportUserSettings);
+            const exportBtn = document.getElementById('exportUserSettings');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', exportUserSettings);
+            }
 
             // Import user settings
-            document.getElementById('importUserSettings').addEventListener('click', function() {
-                document.getElementById('importFileInput').click();
-            });
-            document.getElementById('importFileInput').addEventListener('change', importUserSettings);
+            const importBtn = document.getElementById('importUserSettings');
+            if (importBtn) {
+                importBtn.addEventListener('click', function() {
+                    const importInput = document.getElementById('importFileInput');
+                    if (importInput) {
+                        importInput.click();
+                    }
+                });
+            }
+
+            const importInput = document.getElementById('importFileInput');
+            if (importInput) {
+                importInput.addEventListener('change', importUserSettings);
+            }
 
         }
 
@@ -646,6 +762,7 @@
 
             let prefix = '';
             switch(type) {
+                ```text
                 case 'invoice': prefix = 'INV'; break;
                 case 'quotation': prefix = 'QUO'; break;
                 case 'purchase_order': prefix = 'PO'; break;
@@ -850,14 +967,83 @@
             `;
         }
 
+        // Global variable to track code verification
+        let isCodeVerified = false;
+        let verifiedBusinessSettings = {};
+
+        // Verify download code
+        function verifyDownloadCode() {
+            const code = document.getElementById('pdfDownloadCode').value.trim();
+
+            if (!code) {
+                showError('Please enter a download code');
+                return;
+            }
+
+            fetch('/api/verify-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code: code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    isCodeVerified = true;
+                    verifiedBusinessSettings = data.business_settings || businessSettings;
+
+                    // Enable generate PDF button
+                    const generateBtn = document.getElementById('generatePDF');
+                    generateBtn.disabled = false;
+                    generateBtn.classList.remove('btn-primary');
+                    generateBtn.classList.add('btn-success');
+                    generateBtn.innerHTML = '<i class="fas fa-file-pdf me-2"></i>Generate PDF (Verified)';
+
+                    // Disable verify button and code input
+                    document.getElementById('verifyCodeBtn').disabled = true;
+                    document.getElementById('pdfDownloadCode').disabled = true;
+
+                    showSuccess('Code verified successfully! You can now generate the PDF.');
+                } else {
+                    showError('Error: ' + data.error);
+                    isCodeVerified = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Error verifying code. Please try again.');
+                isCodeVerified = false;
+            });
+        }
+
         // Generate PDF
         function generatePDF() {
-            alert('Please enter a valid download code to generate PDF.');
+            if (!isCodeVerified) {
+                showError('Please verify a download code first.');
+                return;
+            }
+
+            try {
+                // Check if jsPDF is loaded
+                if (typeof window.jspdf === 'undefined') {
+                    throw new Error('PDF library not loaded. Please refresh the page and try again.');
+                }
+
+                generatePDFWithCode();
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                showError('Error: ' + error.message);
+            }
         }
 
         // Generate PDF with verified code
         function generatePDFWithCode() {
+            const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+
+            // Use verified business settings
+            const settings = verifiedBusinessSettings;
 
             // Add document content with proper formatting
             const formData = new FormData(document.getElementById('documentForm'));
@@ -876,9 +1062,9 @@
             // Business info
             doc.setFontSize(12);
             doc.setFont(undefined, 'normal');
-            doc.text(businessSettings.businessName || 'Your Business Name', 20, 50);
-            if (businessSettings.businessAddress) {
-                const addressLines = businessSettings.businessAddress.split('\n');
+            doc.text(settings.businessName || 'Your Business Name', 20, 50);
+            if (settings.businessAddress) {
+                const addressLines = settings.businessAddress.split('\n');
                 addressLines.forEach((line, index) => {
                     doc.text(line, 20, 60 + (index * 8));
                 });
@@ -916,7 +1102,7 @@
             doc.text('Qty', 120, yPos);
             doc.text('Price', 140, yPos);
             doc.text('Total', 170, yPos);
-            
+
             yPos += 10;
             doc.line(20, yPos, 190, yPos); // Header line
             yPos += 10;
@@ -943,15 +1129,15 @@
             yPos += 10;
             doc.line(120, yPos, 190, yPos); // Totals line
             yPos += 10;
-            
+
             doc.text('Subtotal:', 140, yPos);
             doc.text(document.getElementById('subtotal').textContent, 170, yPos);
             yPos += 8;
-            
+
             doc.text('Tax:', 140, yPos);
             doc.text(document.getElementById('tax').textContent, 170, yPos);
             yPos += 8;
-            
+
             doc.setFont(undefined, 'bold');
             doc.text('Total:', 140, yPos);
             doc.text(document.getElementById('total').textContent, 170, yPos);
@@ -972,25 +1158,27 @@
         }
 
         // Generate download code
-        function generateDownloadCode() {
-            fetch('/api/generate-code', {
+        function generateCode() {
+            fetch('/api/generate-bulk-codes', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                }
+                },
+                body: JSON.stringify({ quantity: 1 })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert(`Download code generated: ${data.code}\n\nThis code expires in 24 hours.`);
-                    document.getElementById('downloadCode').value = data.code;
+                    const code = data.codes[0].code;
+                    showNotification(`Download code generated: ${code}\n\nThis code expires in 1 year.`, 'success');
+                    document.getElementById('downloadCode').value = code;
                 } else {
-                    alert('Error generating code: ' + data.error);
+                    showError('Error generating code: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error generating code. Please try again.');
+                showError('Error generating code. Please try again.');
             });
         }
 
@@ -1000,7 +1188,7 @@
             const code = document.getElementById('downloadCode').value.trim();
 
             if (!code) {
-                alert('Please enter a download code');
+                showError('Please enter a download code');
                 return;
             }
 
@@ -1014,19 +1202,19 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Code verified! Generating PDF download...');
+                    showSuccess('Code verified! Generating PDF download...');
                     // Load user's business settings if provided
                     if (data.business_settings) {
                         businessSettings = data.business_settings;
                     }
                     generatePDFWithCode();
                 } else {
-                    alert('Error: ' + data.error);
+                    showError('Error: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error verifying code. Please try again.');
+                showError('Error verifying code. Please try again.');
             });
         }
 
@@ -1050,12 +1238,12 @@
                 if (data.success) {
                     window.location.href = data.redirect;
                 } else {
-                    alert('Login failed: ' + data.error);
+                    showError('Login failed: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Login error. Please try again.');
+                showError('Login error. Please try again.');
             });
         }
 
@@ -1066,7 +1254,7 @@
 
             // Check password confirmation
             if (formData.get('password') !== formData.get('confirmPassword')) {
-                alert('Passwords do not match');
+                showError('Passwords do not match');
                 return;
             }
 
@@ -1086,15 +1274,15 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Registration successful! Please check your email for verification.');
+                    showSuccess('Registration successful! Please check your email for verification.');
                     switchTab('login-tab');
                 } else {
-                    alert('Registration failed: ' + data.error);
+                    showError('Registration failed: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Registration error. Please try again.');
+                showError('Registration error. Please try again.');
             });
         }
 
@@ -1114,7 +1302,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                alert(data.message);
+                showNotification(data.message, data.success ? 'success' : 'info');
                 if (data.success) {
                     const modal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
                     modal.hide();
@@ -1122,7 +1310,7 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error sending reset email. Please try again.');
+                showError('Error sending reset email. Please try again.');
             });
         }
 
@@ -1147,15 +1335,15 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Settings saved successfully!');
+                    showSuccess('Settings saved successfully!');
                     loadBusinessSettings(); // Reload settings to update preview
                 } else {
-                    alert('Error saving settings: ' + data.error);
+                    showError('Error saving settings: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error saving settings. Please try again.');
+                showError('Error saving settings. Please try again.');
             });
         }
 
@@ -1195,12 +1383,12 @@
                     document.getElementById('businessLogoUrl').value = settings.businessLogoUrl || '';
                     document.getElementById('signatureUrl').value = settings.signatureUrl || '';
                     document.getElementById('taxRate').value = settings.taxRate || 0;
-                    alert('Settings imported successfully!');
+                    showSuccess('Settings imported successfully!');
                     loadBusinessSettings();
                     updatePreview();
                 } catch (error) {
                     console.error('Error parsing JSON:', error);
-                    alert('Error importing settings: Invalid JSON file.');
+                    showError('Error importing settings: Invalid JSON file.');
                 }
             };
             reader.readAsText(file);
@@ -1211,6 +1399,78 @@
             if (e.target.id === 'documentType') {
                 generateDocumentNumber();
                 updatePreview();
+            }
+        });
+
+        // Add notification functions if not already defined
+        function showNotification(message, type) {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            // Create or get notification container
+            let container = document.getElementById('notification-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'notification-container';
+                container.style.position = 'fixed';
+                container.style.top = '20px';
+                container.style.right = '20px';
+                container.style.zIndex = '9999';
+                container.style.maxWidth = '400px';
+                document.body.appendChild(container);
+            }
+
+            container.innerHTML = alertHtml;
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                const alert = container.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        function showError(message) {
+            showNotification(message, 'error');
+        }
+
+        function showSuccess(message) {
+            showNotification(message, 'success');
+        }
+
+        // Load business settings when page loads
+        loadBusinessSettings();
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the app
+            loadBusinessSettings();
+
+            // Form submissions - check if elements exist before adding listeners
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+
+            const registerForm = document.getElementById('registerForm');
+            if (registerForm) {
+                registerForm.addEventListener('submit', handleRegister);
+            }
+
+            const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+            if (forgotPasswordForm) {
+                forgotPasswordForm.addEventListener('submit', handleForgotPassword);
+            }
+
+            const downloadForm = document.getElementById('downloadForm');
+            if (downloadForm) {
+                downloadForm.addEventListener('submit', handleDownload);
             }
         });
     </script>
