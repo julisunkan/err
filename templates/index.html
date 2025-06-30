@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Documents Generator</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Business Docs">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Navigation Header -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+            <div class="container">
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-file-invoice me-2"></i>Business Documents Generator
+                </a>
+                <div class="navbar-nav ms-auto">
+                    {% if session.user_id %}
+                        <span class="navbar-text me-3">Welcome, {{ session.username }}!</span>
+                        {% if session.is_admin %}
+                            <a class="nav-link" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+                        {% else %}
+                            <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                        {% endif %}
+                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content with Tabs -->
+        <div class="container">
+            <!-- Tab Navigation -->
+            <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="generator-tab" data-bs-toggle="tab" data-bs-target="#generator" type="button" role="tab">
+                        <i class="fas fa-file-alt me-2"></i>Document Generator
+                    </button>
+                </li>
+                {% if not session.user_id %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">
+                        <i class="fas fa-user-plus me-2"></i>Register
+                    </button>
+                </li>
+                {% endif %}
+                {% if session.is_admin %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="codes-tab" data-bs-toggle="tab" data-bs-target="#codes" type="button" role="tab">
+                        <i class="fas fa-key me-2"></i>Download Codes
+                    </button>
+                </li>
+                {% endif %}
+                {% if session.user_id %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
+                        <i class="fas fa-cog me-2"></i>Settings
+                    </button>
+                </li>
+                {% endif %}
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="mainTabsContent">
+                <!-- Document Generator Tab -->
+                <div class="tab-pane fade show active" id="generator" role="tabpanel">
+                    <div class="row">
+                        <!-- Left Column - Document Form -->
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Create Document</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="documentForm">
+                                        <!-- Document Type -->
+                                        <div class="mb-3">
+                                            <label for="documentType" class="form-label">Document Type</label>
+                                            <select class="form-select" id="documentType" name="documentType">
+                                                <option value="invoice">Invoice</option>
+                                                <option value="quotation">Quotation</option>
+                                                <option value="purchase_order">Purchase Order</option>
+                                                <option value="receipt">Receipt</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Document Number -->
+                                        <div class="mb-3">
+                                            <label for="documentNumber" class="form-label">Document Number</label>
+                                            <input type="text" class="form-control" id="documentNumber" name="documentNumber">
+                                        </div>
+
+                                        <!-- Date -->
+                                        <div class="mb-3">
+                                            <label for="documentDate" class="form-label">Date</label>
+                                            <input type="date" class="form-control" id="documentDate" name="documentDate">
+                                        </div>
+
+                                        <!-- Client Information -->
+                                        <h6 class="mb-3">Client Information</h6>
+                                        <div class="mb-3">
+                                            <label for="clientName" class="form-label">Client Name</label>
+                                            <input type="text" class="form-control" id="clientName" name="clientName" placeholder="Enter client name">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="clientAddress" class="form-label">Client Address</label>
+                                            <textarea class="form-control" id="clientAddress" name="clientAddress" rows="2" placeholder="Enter client address"></textarea>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="clientEmail" class="form-label">Email</label>
+                                                    <input type="email" class="form-control" id="clientEmail" name="clientEmail" placeholder="client@example.com">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="clientPhone" class="form-label">Phone</label>
+                                                    <input type="tel" class="form-control" id="clientPhone" name="clientPhone" placeholder="+1 (555) 123-4567">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Items Section -->
+                                        <h6 class="mb-3">Items</h6>
+                                        <div id="itemsContainer">
+                                            <div class="item-row border rounded p-3 mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="mb-2">
+                                                            <label class="form-label">Description</label>
+                                                            <input type="text" class="form-control item-description" placeholder="Item description">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <div class="mb-2">
+                                                            <label class="form-label">Qty</label>
+                                                            <input type="number" class="form-control item-quantity" value="1" min="1">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <div class="mb-2">
+                                                            <label class="form-label">Price</label>
+                                                            <input type="number" class="form-control item-price" step="0.01" min="0">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <div class="mb-2">
+                                                            <label class="form-label">Total</label>
+                                                            <input type="text" class="form-control item-total" readonly>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-danger remove-item">Remove</button>
+                                            </div>
+                                        </div>
+
+                                        <button type="button" class="btn btn-outline-primary mb-3" id="addItem">
+                                            <i class="fas fa-plus me-1"></i>Add Item
+                                        </button>
+
+                                        <!-- Totals -->
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="notes" class="form-label">Notes</label>
+                                                    <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Additional notes or terms"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="border rounded p-3">
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span>Subtotal:</span>
+                                                        <span id="subtotal">$0.00</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span>Tax:</span>
+                                                        <span id="tax">$0.00</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between fw-bold">
+                                                        <span>Total:</span>
+                                                        <span id="total">$0.00</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="d-grid gap-2 mt-4">
+                                            <button type="button" class="btn btn-primary" id="generatePDF">
+                                                <i class="fas fa-file-pdf me-2"></i>Generate PDF
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column - Live Preview -->
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Live Preview</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="documentPreview" class="border rounded p-4 bg-white" style="min-height: 600px;">
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-file-alt fa-3x mb-3"></i>
+                                            <p>Fill in the form to see a live preview of your document</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Login Tab -->
+                {% if not session.user_id %}
+                <div class="tab-pane fade" id="login" role="tabpanel">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header text-center">
+                                    <h4><i class="fas fa-sign-in-alt me-2"></i>Login</h4>
+                                </div>
+                                <div class="card-body">
+                                    <form id="loginForm">
+                                        <div class="mb-3">
+                                            <label for="loginUsername" class="form-label">Username</label>
+                                            <input type="text" class="form-control" id="loginUsername" name="username" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="loginPassword" class="form-label">Password</label>
+                                            <input type="password" class="form-control" id="loginPassword" name="password" required>
+                                        </div>
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary">Login</button>
+                                        </div>
+                                    </form>
+                                    <div class="text-center mt-3">
+                                        <p class="mb-1">Don't have an account? <a href="#" onclick="switchTab('register-tab')">Register here</a></p>
+                                        <p class="mb-0"><a href="#" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Forgot Password?</a></p>
+                                        <p class="text-muted mt-2"><small>Admin login: admin / admin123</small></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Register Tab -->
+                <div class="tab-pane fade" id="register" role="tabpanel">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header text-center">
+                                    <h4><i class="fas fa-user-plus me-2"></i>Register</h4>
+                                </div>
+                                <div class="card-body">
+                                    <form id="registerForm">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="firstName" class="form-label">First Name</label>
+                                                    <input type="text" class="form-control" id="firstName" name="first_name" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="lastName" class="form-label">Last Name</label>
+                                                    <input type="text" class="form-control" id="lastName" name="last_name" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="registerUsername" class="form-label">Username</label>
+                                            <input type="text" class="form-control" id="registerUsername" name="username" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="registerEmail" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="registerEmail" name="email" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="registerPassword" class="form-label">Password</label>
+                                            <input type="password" class="form-control" id="registerPassword" name="password" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                                        </div>
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-success">Register</button>
+                                        </div>
+                                    </form>
+                                    <div class="text-center mt-3">
+                                        <p class="mb-0">Already have an account? <a href="#" onclick="switchTab('login-tab')">Login here</a></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Download Codes Tab (Admin Only) -->
+                {% if session.is_admin %}
+                <div class="tab-pane fade" id="codes" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Download with Code</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="downloadForm">
+                                        <div class="mb-3">
+                                            <label for="downloadCode" class="form-label">Enter Download Code</label>
+                                            <input type="text" class="form-control" id="downloadCode" name="code" placeholder="Enter your 8-character code" maxlength="8" style="text-transform: uppercase;">
+                                        </div>
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-download me-2"></i>Verify & Download
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Generate Code</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Generate a one-time download code for your document.</p>
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-outline-primary" id="generateCode">
+                                            <i class="fas fa-key me-2"></i>Generate Download Code
+                                        </button>
+                                        <a href="{{ url_for('code_generator') }}" class="btn btn-outline-secondary" target="_blank">
+                                            <i class="fas fa-external-link-alt me-2"></i>Advanced Code Generator
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Settings Tab (for logged-in users) -->
+                {% if session.user_id %}
+                <div class="tab-pane fade" id="settings" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">My Business Settings</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="settingsForm">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="businessName" class="form-label">Business Name</label>
+                                                    <input type="text" class="form-control" id="businessName" name="businessName">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="businessEmail" class="form-label">Business Email</label>
+                                                    <input type="email" class="form-control" id="businessEmail" name="businessEmail">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="businessAddress" class="form-label">Business Address</label>
+                                            <textarea class="form-control" id="businessAddress" name="businessAddress" rows="3"></textarea>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="businessPhone" class="form-label">Business Phone</label>
+                                                    <input type="tel" class="form-control" id="businessPhone" name="businessPhone">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="currency" class="form-label">Currency</label>
+                                                    <select class="form-select" id="currency" name="currency">
+                                                        <option value="USD">USD ($)</option>
+                                                        <option value="EUR">EUR (€)</option>
+                                                        <option value="GBP">GBP (£)</option>
+                                                        <option value="NGN">NGN (₦)</option>
+                                                        <option value="CAD">CAD ($)</option>
+                                                        <option value="AUD">AUD ($)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="businessLogoUrl" class="form-label">Business Logo URL</label>
+                                                    <input type="url" class="form-control" id="businessLogoUrl" name="businessLogoUrl" placeholder="https://example.com/logo.png">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="signatureUrl" class="form-label">Signature URL</label>
+                                                    <input type="url" class="form-control" id="signatureUrl" name="signatureUrl" placeholder="https://example.com/signature.png">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="taxRate" class="form-label">Tax Rate (%)</label>
+                                            <input type="number" class="form-control" id="taxRate" name="taxRate" step="0.1" min="0" max="100">
+                                        </div>
+                                        <div class="d-grid gap-2">
+                                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Quick Actions</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-outline-primary" id="exportUserSettings">
+                                            <i class="fas fa-download me-2"></i>Export My Settings
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" id="importUserSettings">
+                                            <i class="fas fa-upload me-2"></i>Import Settings
+                                        </button>
+                                        <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reset Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="forgotPasswordForm">
+                        <div class="mb-3">
+                            <label for="resetEmail" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="resetEmail" name="email" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Send Reset Link</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        // Ensure jsPDF is available globally
+        window.jsPDF = window.jspdf?.jsPDF || window.jsPDF;
+    </script>
+
+    <!-- Custom JS -->
+    <script>
+        // Global variables
+        let businessSettings = {};
+
+        // Tab switching function
+        function switchTab(tabId) {
+            const tab = document.getElementById(tabId);
+            if (tab) {
+                const tabInstance = new bootstrap.Tab(tab);
+                tabInstance.show();
+            }
+        }
+
+        // Initialize document on load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Document loaded, initializing...');
+
+            // Load business settings
+            loadBusinessSettings();
+
+            // Set default values
+            document.getElementById('documentDate').value = new Date().toISOString().split('T')[0];
+            generateDocumentNumber();
+
+            // Add event listeners
+            setupEventListeners();
+
+            // Initialize first item calculations
+            calculateTotals();
+            updatePreview();
+        });
+
+        // Load business settings
+        function loadBusinessSettings() {
+            fetch('/api/get-settings')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        businessSettings = data.settings;
+                        console.log('Business settings loaded:', businessSettings);
+                        updatePreview();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading settings:', error);
+                    // Use default settings
+                    businessSettings = {
+                        businessName: 'Your Business Name',
+                        businessAddress: 'Your Business Address',
+                        businessPhone: 'Your Phone',
+                        businessEmail: 'your@email.com',
+                        businessLogoUrl: '',
+                        signatureUrl: '',
+                        taxRate: 0,
+                        currency: 'USD'
+                    };
+                });
+        }
+
+        // Setup all event listeners
+        function setupEventListeners() {
+            // Document form changes
+            const formInputs = document.querySelectorAll('#documentForm input, #documentForm select, #documentForm textarea');
+            formInputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    calculateTotals();
+                    updatePreview();
+                });
+                input.addEventListener('change', function() {
+                    calculateTotals();
+                    updatePreview();
+                });
+            });
+
+            // Add item button
+            document.getElementById('addItem').addEventListener('click', addItem);
+
+            // Remove item buttons (delegate event)
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-item')) {
+                    removeItem(e.target);
+                }
+            });
+
+            // Generate PDF button
+            document.getElementById('generatePDF').addEventListener('click', generatePDF);
+
+            // Generate download code button
+            document.getElementById('generateCode').addEventListener('click', generateDownloadCode);
+
+            // Download form
+            document.getElementById('downloadForm').addEventListener('submit', handleDownload);
+
+            // Login form
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+
+            // Register form
+            const registerForm = document.getElementById('registerForm');
+            if (registerForm) {
+                registerForm.addEventListener('submit', handleRegister);
+            }
+
+            // Forgot password form
+            const forgotForm = document.getElementById('forgotPasswordForm');
+            if (forgotForm) {
+                forgotForm.addEventListener('submit', handleForgotPassword);
+            }
+
+            // Download code input formatting
+            document.getElementById('downloadCode').addEventListener('input', function(e) {
+                e.target.value = e.target.value.toUpperCase();
+            });
+
+             // Settings form
+             const settingsForm = document.getElementById('settingsForm');
+            if (settingsForm) {
+                settingsForm.addEventListener('submit', handleSettingsSubmit);
+            }
+
+            // Export user settings
+            document.getElementById('exportUserSettings').addEventListener('click', exportUserSettings);
+
+            // Import user settings
+            document.getElementById('importUserSettings').addEventListener('click', function() {
+                document.getElementById('importFileInput').click();
+            });
+            document.getElementById('importFileInput').addEventListener('change', importUserSettings);
+
+        }
+
+        // Generate document number
+        function generateDocumentNumber() {
+            const type = document.getElementById('documentType').value;
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+
+            let prefix = '';
+            switch(type) {
+                case 'invoice': prefix = 'INV'; break;
+                case 'quotation': prefix = 'QUO'; break;
+                case 'purchase_order': prefix = 'PO'; break;
+                case 'receipt': prefix = 'REC'; break;
+            }
+
+            const docNumber = `${prefix}-${year}${month}${day}-${random}`;
+            document.getElementById('documentNumber').value = docNumber;
+        }
+
+        // Add new item row
+        function addItem() {
+            const container = document.getElementById('itemsContainer');
+            const itemRow = document.createElement('div');
+            itemRow.className = 'item-row border rounded p-3 mb-3';
+            itemRow.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <label class="form-label">Description</label>
+                            <input type="text" class="form-control item-description" placeholder="Item description">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-2">
+                            <label class="form-label">Qty</label>
+                            <input type="number" class="form-control item-quantity" value="1" min="1">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-2">
+                            <label class="form-label">Price</label>
+                            <input type="number" class="form-control item-price" step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-2">
+                            <label class="form-label">Total</label>
+                            <input type="text" class="form-control item-total" readonly>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger remove-item">Remove</button>
+            `;
+
+            container.appendChild(itemRow);
+
+            // Add event listeners to new inputs
+            const inputs = itemRow.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    calculateTotals();
+                    updatePreview();
+                });
+            });
+        }
+
+        // Remove item row
+        function removeItem(button) {
+            const container = document.getElementById('itemsContainer');
+            if (container.children.length > 1) {
+                button.closest('.item-row').remove();
+                calculateTotals();
+                updatePreview();
+            }
+        }
+
+        // Calculate totals
+        function calculateTotals() {
+            const itemRows = document.querySelectorAll('.item-row');
+            let subtotal = 0;
+
+            itemRows.forEach(row => {
+                const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                const total = quantity * price;
+
+                row.querySelector('.item-total').value = `$${total.toFixed(2)}`;
+                subtotal += total;
+            });
+
+            const taxRate = businessSettings.taxRate || 0;
+            const tax = subtotal * (taxRate / 100);
+            const total = subtotal + tax;
+
+            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+            document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+        }
+
+        // Update live preview
+        function updatePreview() {
+            const preview = document.getElementById('documentPreview');
+            const formData = new FormData(document.getElementById('documentForm'));
+
+            // Get items data
+            const items = [];
+            document.querySelectorAll('.item-row').forEach(row => {
+                const description = row.querySelector('.item-description').value;
+                const quantity = row.querySelector('.item-quantity').value;
+                const price = row.querySelector('.item-price').value;
+                const total = row.querySelector('.item-total').value;
+
+                if (description || quantity || price) {
+                    items.push({ description, quantity, price, total });
+                }
+            });
+
+            const docType = formData.get('documentType') || 'invoice';
+            const docNumber = formData.get('documentNumber') || '';
+            const docDate = formData.get('documentDate') || '';
+            const clientName = formData.get('clientName') || '';
+            const clientAddress = formData.get('clientAddress') || '';
+            const clientEmail = formData.get('clientEmail') || '';
+            const clientPhone = formData.get('clientPhone') || '';
+            const notes = formData.get('notes') || '';
+
+            preview.innerHTML = `
+                <div class="document-preview">
+                    <!-- Header -->
+                    <div class="d-flex justify-content-between mb-4">
+                        <div>
+                            <h4>${businessSettings.businessName || 'Your Business Name'}</h4>
+                            <p class="mb-0">${businessSettings.businessAddress || 'Your Business Address'}</p>
+                            <p class="mb-0">${businessSettings.businessPhone || 'Your Phone'}</p>
+                            <p class="mb-0">${businessSettings.businessEmail || 'your@email.com'}</p>
+                        </div>
+                        <div class="text-end">
+                            ${businessSettings.businessLogoUrl ? `<img src="${businessSettings.businessLogoUrl}" alt="Logo" style="max-height: 80px;">` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Document Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>${docType.charAt(0).toUpperCase() + docType.slice(1).replace('_', ' ')}</h5>
+                            <p><strong>Number:</strong> ${docNumber}</p>
+                            <p><strong>Date:</strong> ${docDate}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Bill To:</h6>
+                            <p class="mb-1"><strong>${clientName}</strong></p>
+                            <p class="mb-1">${clientAddress}</p>
+                            <p class="mb-1">${clientEmail}</p>
+                            <p class="mb-1">${clientPhone}</p>
+                        </div>
+                    </div>
+
+                    <!-- Items Table -->
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Description</th>
+                                <th width="80">Qty</th>
+                                <th width="100">Price</th>
+                                <th width="100">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => `
+                                <tr>
+                                    <td>${item.description}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>$${parseFloat(item.price || 0).toFixed(2)}</td>
+                                    <td>${item.total}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <!-- Totals -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            ${notes ? `<p><strong>Notes:</strong><br>${notes}</p>` : ''}
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Subtotal:</strong></td>
+                                    <td class="text-end">${document.getElementById('subtotal').textContent}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tax:</strong></td>
+                                    <td class="text-end">${document.getElementById('tax').textContent}</td>
+                                </tr>
+                                <tr class="table-dark">
+                                    <td><strong>Total:</strong></td>
+                                    <td class="text-end"><strong>${document.getElementById('total').textContent}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Signature -->
+                    ${businessSettings.signatureUrl ? `
+                        <div class="mt-4">
+                            <p><strong>Authorized Signature:</strong></p>
+                            <img src="${businessSettings.signatureUrl}" alt="Signature" style="max-height: 60px;">
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Generate PDF
+        function generatePDF() {
+            alert('Please enter a valid download code to generate PDF.');
+        }
+
+        // Generate PDF with verified code
+        function generatePDFWithCode() {
+            const doc = new jsPDF();
+
+            // Add document content with proper formatting
+            const formData = new FormData(document.getElementById('documentForm'));
+            const docType = formData.get('documentType') || 'invoice';
+            const docNumber = formData.get('documentNumber') || '';
+            const docDate = formData.get('documentDate') || '';
+            const clientName = formData.get('clientName') || '';
+            const clientAddress = formData.get('clientAddress') || '';
+            const notes = formData.get('notes') || '';
+
+            // Header
+            doc.setFontSize(20);
+            doc.setFont(undefined, 'bold');
+            doc.text(docType.charAt(0).toUpperCase() + docType.slice(1).replace('_', ' '), 20, 30);
+
+            // Business info
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'normal');
+            doc.text(businessSettings.businessName || 'Your Business Name', 20, 50);
+            if (businessSettings.businessAddress) {
+                const addressLines = businessSettings.businessAddress.split('\n');
+                addressLines.forEach((line, index) => {
+                    doc.text(line, 20, 60 + (index * 8));
+                });
+            }
+
+            // Document details
+            doc.setFont(undefined, 'bold');
+            doc.text('Document Details:', 120, 50);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Number: ${docNumber}`, 120, 60);
+            doc.text(`Date: ${docDate}`, 120, 70);
+
+            // Client info
+            let yPos = 100;
+            doc.setFont(undefined, 'bold');
+            doc.text('Bill To:', 20, yPos);
+            doc.setFont(undefined, 'normal');
+            yPos += 10;
+            if (clientName) {
+                doc.text(clientName, 20, yPos);
+                yPos += 8;
+            }
+            if (clientAddress) {
+                const clientAddressLines = clientAddress.split('\n');
+                clientAddressLines.forEach((line) => {
+                    doc.text(line, 20, yPos);
+                    yPos += 8;
+                });
+            }
+
+            // Items table
+            yPos += 20;
+            doc.setFont(undefined, 'bold');
+            doc.text('Description', 20, yPos);
+            doc.text('Qty', 120, yPos);
+            doc.text('Price', 140, yPos);
+            doc.text('Total', 170, yPos);
+            
+            yPos += 10;
+            doc.line(20, yPos, 190, yPos); // Header line
+            yPos += 10;
+
+            // Add items
+            const itemRows = document.querySelectorAll('.item-row');
+            doc.setFont(undefined, 'normal');
+            itemRows.forEach(row => {
+                const description = row.querySelector('.item-description').value || '';
+                const quantity = row.querySelector('.item-quantity').value || '';
+                const price = row.querySelector('.item-price').value || '';
+                const total = row.querySelector('.item-total').value || '';
+
+                if (description || quantity || price) {
+                    doc.text(description.substring(0, 40), 20, yPos);
+                    doc.text(quantity, 120, yPos);
+                    doc.text(`$${parseFloat(price || 0).toFixed(2)}`, 140, yPos);
+                    doc.text(total, 170, yPos);
+                    yPos += 10;
+                }
+            });
+
+            // Totals
+            yPos += 10;
+            doc.line(120, yPos, 190, yPos); // Totals line
+            yPos += 10;
+            
+            doc.text('Subtotal:', 140, yPos);
+            doc.text(document.getElementById('subtotal').textContent, 170, yPos);
+            yPos += 8;
+            
+            doc.text('Tax:', 140, yPos);
+            doc.text(document.getElementById('tax').textContent, 170, yPos);
+            yPos += 8;
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('Total:', 140, yPos);
+            doc.text(document.getElementById('total').textContent, 170, yPos);
+
+            // Notes
+            if (notes) {
+                yPos += 20;
+                doc.setFont(undefined, 'bold');
+                doc.text('Notes:', 20, yPos);
+                doc.setFont(undefined, 'normal');
+                yPos += 10;
+                const noteLines = doc.splitTextToSize(notes, 170);
+                doc.text(noteLines, 20, yPos);
+            }
+
+            // Save the PDF
+            doc.save(`${docType}-${docNumber}.pdf`);
+        }
+
+        // Generate download code
+        function generateDownloadCode() {
+            fetch('/api/generate-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Download code generated: ${data.code}\n\nThis code expires in 24 hours.`);
+                    document.getElementById('downloadCode').value = data.code;
+                } else {
+                    alert('Error generating code: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error generating code. Please try again.');
+            });
+        }
+
+        // Handle download with code
+        function handleDownload(e) {
+            e.preventDefault();
+            const code = document.getElementById('downloadCode').value.trim();
+
+            if (!code) {
+                alert('Please enter a download code');
+                return;
+            }
+
+            fetch('/api/verify-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code: code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Code verified! Generating PDF download...');
+                    // Load user's business settings if provided
+                    if (data.business_settings) {
+                        businessSettings = data.business_settings;
+                    }
+                    generatePDFWithCode();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error verifying code. Please try again.');
+            });
+        }
+
+        // Handle login
+        function handleLogin(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: formData.get('username'),
+                    password: formData.get('password')
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    alert('Login failed: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Login error. Please try again.');
+            });
+        }
+
+        // Handle registration
+        function handleRegister(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            // Check password confirmation
+            if (formData.get('password') !== formData.get('confirmPassword')) {
+                alert('Passwords do not match');
+                return;
+            }
+
+            fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: formData.get('username'),
+                    email: formData.get('email'),
+                    password: formData.get('password'),
+                    first_name: formData.get('first_name'),
+                    last_name: formData.get('last_name')
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Registration successful! Please check your email for verification.');
+                    switchTab('login-tab');
+                } else {
+                    alert('Registration failed: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Registration error. Please try again.');
+            });
+        }
+
+        // Handle forgot password
+        function handleForgotPassword(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            fetch('/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.get('email')
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.success) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
+                    modal.hide();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error sending reset email. Please try again.');
+            });
+        }
+
+         // Handle settings submit
+         function handleSettingsSubmit(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            // Convert FormData to JSON object
+            const settings = {};
+            formData.forEach((value, key) => {
+                settings[key] = value;
+            });
+
+            fetch('/api/save-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(settings)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Settings saved successfully!');
+                    loadBusinessSettings(); // Reload settings to update preview
+                } else {
+                    alert('Error saving settings: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving settings. Please try again.');
+            });
+        }
+
+        // Export user settings
+        function exportUserSettings() {
+            const settings = businessSettings;
+            const json = JSON.stringify(settings, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'user-settings.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Import user settings
+        function importUserSettings(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const settings = JSON.parse(e.target.result);
+                    businessSettings = settings;
+                    // Populate the settings form with imported values
+                    document.getElementById('businessName').value = settings.businessName || '';
+                    document.getElementById('businessEmail').value = settings.businessEmail || '';
+                    document.getElementById('businessAddress').value = settings.businessAddress || '';
+                    document.getElementById('businessPhone').value = settings.businessPhone || '';
+                    document.getElementById('currency').value = settings.currency || 'USD';
+                    document.getElementById('businessLogoUrl').value = settings.businessLogoUrl || '';
+                    document.getElementById('signatureUrl').value = settings.signatureUrl || '';
+                    document.getElementById('taxRate').value = settings.taxRate || 0;
+                    alert('Settings imported successfully!');
+                    loadBusinessSettings();
+                    updatePreview();
+                } catch (error) {
+                    console.error('Error parsing JSON:', error);
+                    alert('Error importing settings: Invalid JSON file.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Document type change handler
+        document.addEventListener('change', function(e) {
+            if (e.target.id === 'documentType') {
+                generateDocumentNumber();
+                updatePreview();
+            }
+        });
+    </script>
+
+    <!-- Load external scripts with error handling -->
+    <script>
+        // Load external scripts
+        function loadScript(src, callback) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = callback;
+            script.onerror = function() {
+                console.error('Failed to load script:', src);
+            };
+            document.head.appendChild(script);
+        }
+
+        // Load additional scripts
+        loadScript("{{ url_for('static', filename='js/pwa-utils.js') }}", function() {
+            console.log('PWA utils loaded successfully');
+        });
+    </script>
+</body>
+</html>
