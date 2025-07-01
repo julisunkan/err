@@ -463,7 +463,7 @@ class SimplePDFGenerator {
         this.setFont(this.fontSize.small, 'normal');
 
         // Thank you message centered
-        const thankYou = 'Thank you for your business!';
+        const thankYou = 'Thank you for your patronage!';
         this.doc.text(thankYou, this.pageWidth / 2, footerY + 8, { align: 'center' });
     }
 
