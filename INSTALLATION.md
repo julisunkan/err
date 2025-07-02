@@ -131,3 +131,39 @@
 - Document numbering follows standard business formats
 
 This application is designed to be simple to use while providing professional results for your business documentation needs.
+
+## Packaging as Standalone Application
+
+### Creating EXE and MSI Files
+
+You can package this web application into standalone executable files that run locally without needing to host online:
+
+#### Quick Build (Windows)
+1. **Double-click `build.bat`** - Automated build process
+2. **Or run manually:**
+   ```bash
+   python build_all.py
+   ```
+
+#### What Gets Created
+- **EXE File**: `dist/BusinessDocumentsGenerator.exe` - Standalone executable
+- **Portable Version**: `BusinessDocumentsGenerator_Portable/` - No installation needed
+- **MSI Installer**: `dist/*.msi` - Professional Windows installer
+
+#### Requirements for Building
+- Python 3.7 or higher
+- Windows 7 or later
+- 500MB free disk space
+
+#### Usage After Building
+1. **Portable**: Run `Start_Business_Documents.bat` in the portable folder
+2. **EXE**: Double-click `BusinessDocumentsGenerator.exe`
+3. **MSI**: Install like any Windows program, then launch from Start Menu
+
+The standalone version:
+- Runs on localhost:5000 (opens automatically in browser)
+- Uses local SQLite database
+- Works completely offline
+- No internet connection required
+
+For detailed packaging instructions, see `PACKAGING_README.md`.
