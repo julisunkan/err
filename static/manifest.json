@@ -34,5 +34,32 @@
     }
   ],
   "categories": ["business", "productivity", "finance"],
-  "screenshots": []
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "shortcuts": [
+    {
+      "name": "Create Invoice",
+      "short_name": "Invoice",
+      "description": "Create a new invoice",
+      "url": "/?type=invoice",
+      "icons": [{ "src": "/static/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Create Quote",
+      "short_name": "Quote",
+      "description": "Create a new quotation",
+      "url": "/?type=quote",
+      "icons": [{ "src": "/static/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+businessdocs",
+      "url": "/?action=%s"
+    }
+  ]
 }

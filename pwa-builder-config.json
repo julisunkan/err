@@ -1,0 +1,47 @@
+
+{
+  "name": "Business Documents Generator",
+  "packageName": "BusinessDocumentsGenerator",
+  "displayName": "Business Docs Generator",
+  "publisherDisplayName": "Your Business Name",
+  "version": "1.0.0.0",
+  "packageFamily": "BusinessDocumentsGenerator_abc123def456",
+  "identityName": "BusinessDocumentsGenerator",
+  "publisher": "CN=YourPublisher",
+  "description": "Professional business document generator with PDF export functionality",
+  "backgroundColor": "#ffffff",
+  "accentColor": "#0d6efd",
+  "startUrl": "/",
+  "manifestUrl": "/static/manifest.json",
+  "platform": {
+    "packageId": "com.yourbusiness.docgenerator",
+    "name": "windows",
+    "version": "1.0.0"
+  },
+  "features": {
+    "clipboard": true,
+    "notification": true,
+    "fullscreen": true,
+    "geolocation": false,
+    "camera": false,
+    "microphone": false
+  },
+  "windows": {
+    "minVersion": "10.0.17763.0",
+    "maxVersionTested": "10.0.22000.0",
+    "targetDeviceFamily": [
+      "Windows.Universal",
+      "Windows.Desktop"
+    ],
+    "capabilities": [
+      "internetClient",
+      "privateNetworkClientServer"
+    ],
+    "extensions": [
+      {
+        "category": "windows.fileTypeAssociation",
+        "fileTypes": [".pdf", ".html"]
+      }
+    ]
+  }
+}
