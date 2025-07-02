@@ -3,9 +3,7 @@ import json
 import logging
 import secrets
 import string
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
@@ -39,7 +37,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Import models and initialize database
-from models import db, User, UserPDFCode, PDFRequest, Message, DownloadCode, BusinessSettings, UserBusinessSettings, ClientSettings, SMTPSettings, ActivityLog, GeneratedDocument, SystemSettings
+from models import db, User, UserPDFCode, PDFRequest, Message, DownloadCode, BusinessSettings, UserBusinessSettings, ClientSettings, ActivityLog, GeneratedDocument, SystemSettings
 
 # Initialize the app with the extension
 db.init_app(app)
@@ -105,35 +103,9 @@ def log_activity(user_id, activity_type, description, ip_address=None, user_agen
         logging.error(f"Failed to log activity: {str(e)}")
 
 def send_email(to_email, subject, body, is_html=False):
-    """Send email using SMTP settings"""
-    try:
-        smtp_settings = SMTPSettings.query.filter_by(is_active=True).first()
-        if not smtp_settings:
-            logging.error("No active SMTP settings found")
-            return False
-
-        msg = MIMEMultipart()
-        msg['From'] = f"{smtp_settings.from_name or 'Business Docs'} <{smtp_settings.from_email}>"
-        msg['To'] = to_email
-        msg['Subject'] = subject
-
-        msg.attach(MIMEText(body, 'html' if is_html else 'plain'))
-
-        server = smtplib.SMTP(smtp_settings.smtp_server, smtp_settings.smtp_port)
-        if smtp_settings.use_tls:
-            server.starttls()
-        server.login(smtp_settings.smtp_username, smtp_settings.smtp_password)
-
-        text = msg.as_string()
-        server.sendmail(smtp_settings.from_email, to_email, text)
-        server.quit()
-
-        logging.info(f"Email sent successfully to {to_email}")
-        return True
-
-    except Exception as e:
-        logging.error(f"Failed to send email: {str(e)}")
-        return False
+    """Email functionality disabled - SMTP settings removed"""
+    logging.info(f"Email sending disabled - would have sent to {to_email}: {subject}")
+    return True
 
 @app.route('/')
 def index():
