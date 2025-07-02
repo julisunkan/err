@@ -1571,7 +1571,6 @@ def offline():
 
 @app.route('/api/get-current-user')
 def get_current_user():
-```python
     """Get current logged in user info"""
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
