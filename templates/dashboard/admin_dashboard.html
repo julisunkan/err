@@ -341,6 +341,12 @@
                 </a>
             </div>
             <div class="nav-item">
+                <a href="#database" class="nav-link" onclick="showSection('database')">
+                    <i class="bi bi-database"></i>
+                    <span>Database</span>
+                </a>
+            </div>
+            <div class="nav-item">
                 <a href="#activity" class="nav-link" onclick="showSection('activity')">
                     <i class="bi bi-activity"></i>
                     <span>Activity</span>
@@ -651,6 +657,67 @@
 
             <!-- Settings Section -->
             <div id="settings-section" class="content-section" style="display: none;">
+                <!-- Database Management -->
+                <div class="content-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-database me-2"></i>Database Management</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-download display-4 text-primary mb-3"></i>
+                                        <h6>Export Database</h6>
+                                        <p class="text-muted small">Export all database data as JSON</p>
+                                        <button class="btn btn-primary btn-modern" onclick="exportDatabase()">
+                                            <i class="bi bi-download me-2"></i>Export Data
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-upload display-4 text-success mb-3"></i>
+                                        <h6>Import Database</h6>
+                                        <p class="text-muted small">Import database settings from JSON</p>
+                                        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDatabase(event)">
+                                        <button class="btn btn-success btn-modern" onclick="document.getElementById('importFile').click()">
+                                            <i class="bi bi-upload me-2"></i>Import Data
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-archive display-4 text-info mb-3"></i>
+                                        <h6>Create Backup</h6>
+                                        <p class="text-muted small">Create full database backup</p>
+                                        <button class="btn btn-info btn-modern" onclick="createBackup()">
+                                            <i class="bi bi-archive me-2"></i>Create Backup
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-gear display-4 text-warning mb-3"></i>
+                                        <h6>Backup Settings</h6>
+                                        <p class="text-muted small">Configure backup directory</p>
+                                        <button class="btn btn-warning btn-modern" onclick="configureBackup()">
+                                            <i class="bi bi-gear me-2"></i>Configure
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SMTP Settings -->
                 <div class="content-card">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="bi bi-gear me-2"></i>SMTP Settings</h5>
@@ -725,6 +792,68 @@
                             <ul class="pagination justify-content-center">
                             </ul>
                         </nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Section -->
+            <div id="database-section" class="content-section" style="display: none;">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-database me-2"></i>Database Management</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card border-primary">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-download display-1 text-primary mb-3"></i>
+                                        <h5>Export Database</h5>
+                                        <p class="text-muted">Export all database data as JSON file for backup or migration purposes.</p>
+                                        <button class="btn btn-primary btn-modern" onclick="exportDatabase()">
+                                            <i class="bi bi-download me-2"></i>Export Data
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-success">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-upload display-1 text-success mb-3"></i>
+                                        <h5>Import Database</h5>
+                                        <p class="text-muted">Import database settings from JSON file. This will only import settings, not user data.</p>
+                                        <input type="file" id="databaseImportFile" accept=".json" style="display: none;" onchange="importDatabase(event)">
+                                        <button class="btn btn-success btn-modern" onclick="document.getElementById('databaseImportFile').click()">
+                                            <i class="bi bi-upload me-2"></i>Import Data
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-info">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-archive display-1 text-info mb-3"></i>
+                                        <h5>Create Backup</h5>
+                                        <p class="text-muted">Create a complete backup of the database file and uploaded documents.</p>
+                                        <button class="btn btn-info btn-modern" onclick="createBackup()">
+                                            <i class="bi bi-archive me-2"></i>Create Backup
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-warning">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-gear display-1 text-warning mb-3"></i>
+                                        <h5>Backup Settings</h5>
+                                        <p class="text-muted">Configure backup directory and automatic backup settings.</p>
+                                        <button class="btn btn-warning btn-modern" onclick="showBackupSettings()">
+                                            <i class="bi bi-gear me-2"></i>Configure
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -844,6 +973,31 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary btn-modern" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary btn-modern">Send Test Email</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Settings Modal -->
+    <div class="modal fade modal-modern" id="backupSettingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Backup Settings</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="backupSettingsForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="backupDirectory" class="form-label">Backup Directory</label>
+                            <input type="text" class="form-control form-control-modern" id="backupDirectory" name="backup_directory" required placeholder="Enter backup directory path">
+                            <div class="form-text">Specify the directory where backups will be stored.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-modern" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-modern">Save Settings</button>
                     </div>
                 </form>
             </div>
@@ -1272,6 +1426,158 @@
             document.getElementById('activity-pagination').innerHTML = `<ul class="pagination justify-content-center">${html}</ul>`;
             document.getElementById('activity-pagination').style.display = 'block';
         }
+
+        // Database Management Functions
+        function exportDatabase() {
+            if (!confirm('Are you sure you want to export the database? This will create a JSON file with all data.')) {
+                return;
+            }
+
+            fetch('/api/admin/export-database', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Create and download file
+                    const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = result.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    showAlert('Database exported successfully!', 'success');
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Export failed: ' + error.message, 'error');
+            });
+        }
+
+        function importDatabase(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!confirm('Are you sure you want to import database settings? This will add new settings from the file.')) {
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importData = JSON.parse(e.target.result);
+                    
+                    fetch('/api/admin/import-database', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ data: importData })
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            showAlert(result.message, 'success');
+                        } else {
+                            showAlert(result.error, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showAlert('Import failed: ' + error.message, 'error');
+                    });
+
+                } catch (error) {
+                    showAlert('Invalid JSON file: ' + error.message, 'error');
+                }
+                
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function createBackup() {
+            if (!confirm('Are you sure you want to create a backup? This will create a copy of the database and files.')) {
+                return;
+            }
+
+            fetch('/api/admin/backup-database', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Backup failed: ' + error.message, 'error');
+            });
+        }
+
+        function showBackupSettings() {
+            // Load current backup settings
+            fetch('/api/admin/backup-settings')
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    document.getElementById('backupDirectory').value = result.backup_directory;
+                    new bootstrap.Modal(document.getElementById('backupSettingsModal')).show();
+                } else {
+                    showAlert('Failed to load backup settings', 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Failed to load backup settings: ' + error.message, 'error');
+            });
+        }
+
+        // Backup settings form handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const backupSettingsForm = document.getElementById('backupSettingsForm');
+            if (backupSettingsForm) {
+                backupSettingsForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    const data = Object.fromEntries(formData);
+                    
+                    fetch('/api/admin/backup-settings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            showAlert(result.message, 'success');
+                            bootstrap.Modal.getInstance(document.getElementById('backupSettingsModal')).hide();
+                        } else {
+                            showAlert(result.error, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showAlert('Failed to save backup settings: ' + error.message, 'error');
+                    });
+                });
+            }
+        });
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {

@@ -1551,6 +1551,212 @@ def backup_database():
         logging.error(f"Error creating backup: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to create backup'}), 500
 
+@app.route('/api/admin/export-database', methods=['POST'])
+@admin_required
+def export_database():
+    """Export database data to JSON format"""
+    try:
+        data = {}
+        
+        # Export Users (excluding password hashes for security)
+        users = User.query.all()
+        data['users'] = []
+        for user in users:
+            user_data = {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'is_admin': user.is_admin,
+                'is_verified': user.is_verified,
+                'created_at': user.created_at.isoformat() if user.created_at else None,
+                'last_login': user.last_login.isoformat() if user.last_login else None
+            }
+            data['users'].append(user_data)
+
+        # Export Business Settings
+        business_settings = BusinessSettings.query.all()
+        data['business_settings'] = []
+        for setting in business_settings:
+            data['business_settings'].append({
+                'id': setting.id,
+                'business_name': setting.business_name,
+                'business_address': setting.business_address,
+                'business_phone': setting.business_phone,
+                'business_email': setting.business_email,
+                'business_logo_url': setting.business_logo_url,
+                'signature_url': setting.signature_url,
+                'tax_rate': setting.tax_rate,
+                'currency': setting.currency,
+                'created_at': setting.created_at.isoformat() if setting.created_at else None,
+                'updated_at': setting.updated_at.isoformat() if setting.updated_at else None
+            })
+
+        # Export User Business Settings
+        user_business_settings = UserBusinessSettings.query.all()
+        data['user_business_settings'] = []
+        for setting in user_business_settings:
+            data['user_business_settings'].append({
+                'id': setting.id,
+                'user_id': setting.user_id,
+                'business_name': setting.business_name,
+                'business_address': setting.business_address,
+                'business_phone': setting.business_phone,
+                'business_email': setting.business_email,
+                'business_logo_url': setting.business_logo_url,
+                'signature_url': setting.signature_url,
+                'tax_rate': setting.tax_rate,
+                'currency': setting.currency,
+                'created_at': setting.created_at.isoformat() if setting.created_at else None,
+                'updated_at': setting.updated_at.isoformat() if setting.updated_at else None
+            })
+
+        # Export Client Settings
+        client_settings = ClientSettings.query.all()
+        data['client_settings'] = []
+        for client in client_settings:
+            data['client_settings'].append({
+                'id': client.id,
+                'user_id': client.user_id,
+                'client_name': client.client_name,
+                'client_address': client.client_address,
+                'client_email': client.client_email,
+                'client_phone': client.client_phone,
+                'is_active': client.is_active,
+                'created_at': client.created_at.isoformat() if client.created_at else None,
+                'updated_at': client.updated_at.isoformat() if client.updated_at else None
+            })
+
+        # Export PDF Requests
+        pdf_requests = PDFRequest.query.all()
+        data['pdf_requests'] = []
+        for req in pdf_requests:
+            data['pdf_requests'].append({
+                'id': req.id,
+                'user_id': req.user_id,
+                'title': req.title,
+                'description': req.description,
+                'status': req.status,
+                'admin_response': req.admin_response,
+                'created_at': req.created_at.isoformat() if req.created_at else None,
+                'updated_at': req.updated_at.isoformat() if req.updated_at else None
+            })
+
+        # Export Messages
+        messages = Message.query.all()
+        data['messages'] = []
+        for msg in messages:
+            data['messages'].append({
+                'id': msg.id,
+                'sender_id': msg.sender_id,
+                'recipient_id': msg.recipient_id,
+                'subject': msg.subject,
+                'content': msg.content,
+                'is_read': msg.is_read,
+                'parent_message_id': msg.parent_message_id,
+                'created_at': msg.created_at.isoformat() if msg.created_at else None
+            })
+
+        # Export System Settings
+        system_settings = SystemSettings.query.all()
+        data['system_settings'] = []
+        for setting in system_settings:
+            data['system_settings'].append({
+                'id': setting.id,
+                'setting_key': setting.setting_key,
+                'setting_value': setting.setting_value,
+                'created_at': setting.created_at.isoformat() if setting.created_at else None,
+                'updated_at': setting.updated_at.isoformat() if setting.updated_at else None
+            })
+
+        # Add export metadata
+        data['export_info'] = {
+            'export_date': datetime.utcnow().isoformat(),
+            'version': '1.0',
+            'total_records': {
+                'users': len(data['users']),
+                'business_settings': len(data['business_settings']),
+                'user_business_settings': len(data['user_business_settings']),
+                'client_settings': len(data['client_settings']),
+                'pdf_requests': len(data['pdf_requests']),
+                'messages': len(data['messages']),
+                'system_settings': len(data['system_settings'])
+            }
+        }
+
+        return jsonify({
+            'success': True,
+            'data': data,
+            'filename': f'database_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+        })
+
+    except Exception as e:
+        logging.error(f"Error exporting database: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to export database'}), 500
+
+@app.route('/api/admin/import-database', methods=['POST'])
+@admin_required
+def import_database():
+    """Import database data from JSON format"""
+    try:
+        data = request.get_json()
+        import_data = data.get('data')
+
+        if not import_data:
+            return jsonify({'success': False, 'error': 'No import data provided'}), 400
+
+        imported_counts = {}
+
+        # Import Business Settings (non-destructive)
+        if 'business_settings' in import_data:
+            for setting_data in import_data['business_settings']:
+                existing = BusinessSettings.query.filter_by(id=setting_data.get('id')).first()
+                if not existing:
+                    setting = BusinessSettings(
+                        business_name=setting_data.get('business_name'),
+                        business_address=setting_data.get('business_address'),
+                        business_phone=setting_data.get('business_phone'),
+                        business_email=setting_data.get('business_email'),
+                        business_logo_url=setting_data.get('business_logo_url'),
+                        signature_url=setting_data.get('signature_url'),
+                        tax_rate=setting_data.get('tax_rate', 0),
+                        currency=setting_data.get('currency', 'USD')
+                    )
+                    db.session.add(setting)
+            imported_counts['business_settings'] = len(import_data['business_settings'])
+
+        # Import System Settings (non-destructive)
+        if 'system_settings' in import_data:
+            for setting_data in import_data['system_settings']:
+                existing = SystemSettings.query.filter_by(setting_key=setting_data.get('setting_key')).first()
+                if not existing:
+                    setting = SystemSettings(
+                        setting_key=setting_data.get('setting_key'),
+                        setting_value=setting_data.get('setting_value')
+                    )
+                    db.session.add(setting)
+            imported_counts['system_settings'] = len(import_data['system_settings'])
+
+        # Note: We don't import users, messages, or other sensitive data for security
+        # This would require more careful handling and user confirmation
+
+        db.session.commit()
+
+        # Log import activity
+        log_activity(session['user_id'], 'database_import', f"Admin imported database settings", request.remote_addr, request.user_agent.string)
+
+        return jsonify({
+            'success': True,
+            'message': 'Database settings imported successfully',
+            'imported_counts': imported_counts
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error importing database: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to import database'}), 500
+
 @app.route('/api/admin/backup-settings', methods=['GET', 'POST'])
 @admin_required
 def backup_settings():
