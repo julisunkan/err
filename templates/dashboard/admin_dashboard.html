@@ -1,172 +1,486 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Business Documents Generator</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Admin Dashboard - Business Documents</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #6366f1;
+            --accent-color: #8b5cf6;
+            --dark-bg: #1e293b;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 280px;
+            background: var(--dark-bg);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-header h4 {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar.collapsed .sidebar-header h4 {
+            opacity: 0;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            color: #cbd5e1;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-radius: 0 25px 25px 0;
+            margin-right: 1rem;
+        }
+
+        .nav-link:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar.collapsed .nav-link span {
+            opacity: 0;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .sidebar.collapsed + .main-content {
+            margin-left: 80px;
+        }
+
+        .top-bar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-area {
+            padding: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            opacity: 0.7;
+        }
+
+        .content-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem;
+            border: none;
+        }
+
+        .btn-modern {
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .table-modern {
+            border: none;
+        }
+
+        .table-modern thead th {
+            background: #f8fafc;
+            border: none;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding: 1rem;
+        }
+
+        .table-modern tbody td {
+            border: none;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 1rem;
+            vertical-align: middle;
+        }
+
+        .badge-modern {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .modal-modern .modal-content {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .modal-modern .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .form-control-modern {
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control-modern:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+        }
+
+        .toggle-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1001;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .quick-action-btn {
+            background: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quick-action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-shield-alt"></i> Admin Dashboard
-            </a>
+    <button class="toggle-btn d-md-none" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
 
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-user-shield"></i> Admin
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ url_for('messages') }}">
-                            <i class="fas fa-envelope"></i> Messages
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('code_generator') }}">
-                            <i class="fas fa-key"></i> Code Generator
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('index') }}">
-                            <i class="fas fa-file-invoice"></i> Document Generator
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ url_for('logout') }}">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </a></li>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="bi bi-shield-check text-primary" style="font-size: 2rem;"></i>
+            <h4>Admin Panel</h4>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item">
+                <a href="#dashboard" class="nav-link active" onclick="showSection('dashboard')">
+                    <i class="bi bi-house-door"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#users" class="nav-link" onclick="showSection('users')">
+                    <i class="bi bi-people"></i>
+                    <span>Users</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#requests" class="nav-link" onclick="showSection('requests')">
+                    <i class="bi bi-inbox"></i>
+                    <span>Requests</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#uploads" class="nav-link" onclick="showSection('uploads')">
+                    <i class="bi bi-cloud-upload"></i>
+                    <span>Uploads</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#settings" class="nav-link" onclick="showSection('settings')">
+                    <i class="bi bi-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#activity" class="nav-link" onclick="showSection('activity')">
+                    <i class="bi bi-activity"></i>
+                    <span>Activity</span>
+                </a>
+            </div>
+            <div class="nav-item mt-4">
+                <a href="{{ url_for('index') }}" class="nav-link">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Back to App</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('logout') }}" class="nav-link">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link d-none d-md-block me-3" onclick="toggleSidebar()">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                <h5 class="mb-0">Welcome back, Admin</h5>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle me-2"></i>Admin
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('profile') }}">Profile</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
                     </ul>
                 </div>
             </div>
         </div>
-    </nav>
 
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-12">
-                <h1>Admin Dashboard</h1>
-                <p class="lead">Manage users, requests, and document uploads.</p>
-            </div>
-        </div>
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="content-section">
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <a href="{{ url_for('code_generator') }}" class="quick-action-btn">
+                        <i class="bi bi-key"></i>
+                        Generate Codes
+                    </a>
+                    <a href="{{ url_for('messages') }}" class="quick-action-btn">
+                        <i class="bi bi-envelope"></i>
+                        Messages
+                    </a>
+                    <button class="quick-action-btn" onclick="showSection('users')">
+                        <i class="bi bi-person-plus"></i>
+                        Manage Users
+                    </button>
+                </div>
 
-        <div id="alert-container"></div>
-
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ users|length }}</h4>
-                                <p class="mb-0">Total Users</p>
+                <!-- Statistics Cards -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="stat-value">{{ users|length }}</div>
+                                    <div class="stat-label">Total Users</div>
+                                </div>
+                                <i class="bi bi-people stat-icon text-primary"></i>
                             </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="stat-value">{{ pending_requests|length }}</div>
+                                    <div class="stat-label">Pending Requests</div>
+                                </div>
+                                <i class="bi bi-inbox stat-icon text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="stat-value">{{ recent_uploads|length }}</div>
+                                    <div class="stat-label">Recent Uploads</div>
+                                </div>
+                                <i class="bi bi-cloud-upload stat-icon text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="stat-value">{{ users|selectattr('is_verified', 'equalto', True)|list|length }}</div>
+                                    <div class="stat-label">Verified Users</div>
+                                </div>
+                                <i class="bi bi-shield-check stat-icon text-info"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ pending_requests|length }}</h4>
-                                <p class="mb-0">Pending Requests</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-clock fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ recent_uploads|length }}</h4>
-                                <p class="mb-0">Recent Uploads</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-upload fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ users|selectattr('is_verified', 'equalto', True)|list|length }}</h4>
-                                <p class="mb-0">Verified Users</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-check-circle fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Tabs -->
-        <ul class="nav nav-tabs" id="adminTabs">
-            <li class="nav-item">
-                <a class="nav-link active" id="users-tab" data-bs-toggle="tab" href="#users">
-                    <i class="fas fa-users"></i> Users
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="requests-tab" data-bs-toggle="tab" href="#requests">
-                    <i class="fas fa-paper-plane"></i> Requests ({{ pending_requests|length }})
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="uploads-tab" data-bs-toggle="tab" href="#uploads">
-                    <i class="fas fa-upload"></i> Recent Uploads
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="settings-tab" data-bs-toggle="tab" href="#settings">
-                    <i class="fas fa-cog"></i> Settings
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="activity-tab" data-bs-toggle="tab" href="#activity">
-                    <i class="fas fa-history"></i> Activity Logs
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="documents-tab" data-bs-toggle="tab" href="#documents">
-                    <i class="fas fa-file-pdf"></i> Documents
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="backup-tab" data-bs-toggle="tab" href="#backup">
-                    <i class="fas fa-download"></i> Backup & Restore
-                </a>
-            </li>
-        </ul>
-
-        <div class="tab-content mt-3">
-            <!-- Users Tab -->
-            <div class="tab-pane fade show active" id="users">
-                <div class="card">
+                <!-- Recent Activity -->
+                <div class="content-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-users"></i> User Management</h5>
+                        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-activity">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Section -->
+            <div id="users-section" class="content-section" style="display: none;">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-people me-2"></i>User Management</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-striped">
+                            <table class="table table-modern">
                                 <thead>
                                     <tr>
-                                        <th>Username</th>
-                                        <th>Name</th>
+                                        <th>User</th>
                                         <th>Email</th>
                                         <th>Status</th>
                                         <th>Joined</th>
@@ -176,39 +490,50 @@
                                 <tbody>
                                     {% for user in users %}
                                     <tr>
-                                        <td>{{ user.username }}</td>
-                                        <td>{{ user.first_name }} {{ user.last_name }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-circle bg-primary text-white me-3">
+                                                    {{ user.first_name[0] }}{{ user.last_name[0] }}
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold">{{ user.first_name }} {{ user.last_name }}</div>
+                                                    <div class="text-muted small">@{{ user.username }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td>{{ user.email }}</td>
                                         <td>
                                             {% if user.is_verified %}
-                                            <span class="badge bg-success">Verified</span>
+                                            <span class="badge badge-modern bg-success">Verified</span>
                                             {% else %}
-                                            <span class="badge bg-warning">Unverified</span>
+                                            <span class="badge badge-modern bg-warning">Unverified</span>
                                             {% endif %}
                                         </td>
                                         <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-primary" onclick="uploadForUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
-                                                <i class="fas fa-upload"></i> Upload
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-info" onclick="messageUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
-                                                <i class="fas fa-envelope"></i> Message
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-secondary" onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.email }}', '{{ user.first_name }}', '{{ user.last_name }}')">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </button>
-                                            {% if user.is_verified %}
-                                            <button type="button" class="btn btn-sm btn-warning" onclick="toggleVerification({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}', false)">
-                                                <i class="fas fa-user-times"></i> Unverify
-                                            </button>
-                                            {% else %}
-                                            <button type="button" class="btn btn-sm btn-success" onclick="toggleVerification({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}', true)">
-                                                <i class="fas fa-user-check"></i> Verify
-                                            </button>
-                                            {% endif %}
-                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
-                                                <i class="fas fa-trash"></i> Delete
-                                            </button>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-sm btn-outline-primary" onclick="uploadForUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
+                                                    <i class="bi bi-upload"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-info" onclick="messageUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
+                                                    <i class="bi bi-envelope"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary" onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.email }}', '{{ user.first_name }}', '{{ user.last_name }}')">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                {% if user.is_verified %}
+                                                <button class="btn btn-sm btn-outline-warning" onclick="toggleVerification({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}', false)">
+                                                    <i class="bi bi-shield-x"></i>
+                                                </button>
+                                                {% else %}
+                                                <button class="btn btn-sm btn-outline-success" onclick="toggleVerification({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}', true)">
+                                                    <i class="bi bi-shield-check"></i>
+                                                </button>
+                                                {% endif %}
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -219,16 +544,16 @@
                 </div>
             </div>
 
-            <!-- Requests Tab -->
-            <div class="tab-pane fade" id="requests">
-                <div class="card">
+            <!-- Requests Section -->
+            <div id="requests-section" class="content-section" style="display: none;">
+                <div class="content-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-paper-plane"></i> Pending Requests</h5>
+                        <h5 class="mb-0"><i class="bi bi-inbox me-2"></i>Pending Requests</h5>
                     </div>
                     <div class="card-body">
                         {% if pending_requests %}
                         <div class="table-responsive">
-                            <table class="table table-striped">
+                            <table class="table table-modern">
                                 <thead>
                                     <tr>
                                         <th>User</th>
@@ -246,15 +571,17 @@
                                         <td>{{ request.description[:100] }}{% if request.description|length > 100 %}...{% endif %}</td>
                                         <td>{{ request.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-success" onclick="respondToRequest({{ request.id }}, 'approved')">
-                                                <i class="fas fa-check"></i> Approve
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-danger" onclick="respondToRequest({{ request.id }}, 'rejected')">
-                                                <i class="fas fa-times"></i> Reject
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-info" onclick="viewFullRequest({{ request.id }}, '{{ request.title }}', '{{ request.description }}', '{{ request.user.first_name }} {{ request.user.last_name }}')">
-                                                <i class="fas fa-eye"></i> View
-                                            </button>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-sm btn-success" onclick="respondToRequest({{ request.id }}, 'approved')">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" onclick="respondToRequest({{ request.id }}, 'rejected')">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-info" onclick="viewFullRequest({{ request.id }}, '{{ request.title }}', '{{ request.description }}', '{{ request.user.first_name }} {{ request.user.last_name }}')">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -262,9 +589,9 @@
                             </table>
                         </div>
                         {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                            <h5>No pending requests</h5>
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox display-1 text-muted"></i>
+                            <h5 class="mt-3">No pending requests</h5>
                             <p class="text-muted">All requests have been processed.</p>
                         </div>
                         {% endif %}
@@ -272,16 +599,16 @@
                 </div>
             </div>
 
-            <!-- Uploads Tab -->
-            <div class="tab-pane fade" id="uploads">
-                <div class="card">
+            <!-- Uploads Section -->
+            <div id="uploads-section" class="content-section" style="display: none;">
+                <div class="content-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-upload"></i> Recent Uploads</h5>
+                        <h5 class="mb-0"><i class="bi bi-cloud-upload me-2"></i>Recent Uploads</h5>
                     </div>
                     <div class="card-body">
                         {% if recent_uploads %}
                         <div class="table-responsive">
-                            <table class="table table-striped">
+                            <table class="table table-modern">
                                 <thead>
                                     <tr>
                                         <th>File Name</th>
@@ -294,110 +621,102 @@
                                 <tbody>
                                     {% for upload in recent_uploads %}
                                     <tr>
-                                        <td>{{ upload.original_filename }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+                                                {{ upload.original_filename }}
+                                            </div>
+                                        </td>
                                         <td>{{ upload.user.first_name }} {{ upload.user.last_name }}</td>
                                         <td>{{ upload.description or 'No description' }}</td>
                                         <td>{{ upload.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                        <td>{{ upload.download_count }}</td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ upload.download_count }}</span>
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
                         {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-upload fa-3x text-muted mb-3"></i>
-                            <h5>No uploads yet</h5>
+                        <div class="text-center py-5">
+                            <i class="bi bi-cloud-upload display-1 text-muted"></i>
+                            <h5 class="mt-3">No uploads yet</h5>
                             <p class="text-muted">Upload files for users to see them here.</p>
                         </div>
                         {% endif %}
                     </div>
                 </div>
             </div>
-             <!-- Settings Tab -->
-            <div class="tab-pane fade" id="settings">
-                <div class="card">
+
+            <!-- Settings Section -->
+            <div id="settings-section" class="content-section" style="display: none;">
+                <div class="content-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-cog"></i> SMTP Settings</h5>
+                        <h5 class="mb-0"><i class="bi bi-gear me-2"></i>SMTP Settings</h5>
                     </div>
                     <div class="card-body">
                         <form id="smtpForm">
-                            <div class="row">
+                            <div class="row g-3">
                                 <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="smtpServer" class="form-label">SMTP Server</label>
-                                        <input type="text" class="form-control" id="smtpServer" name="smtp_server" placeholder="smtp.gmail.com" required>
-                                    </div>
+                                    <label for="smtpServer" class="form-label">SMTP Server</label>
+                                    <input type="text" class="form-control form-control-modern" id="smtpServer" name="smtp_server" placeholder="smtp.gmail.com">
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="smtpPort" class="form-label">SMTP Port</label>
-                                        <input type="number" class="form-control" id="smtpPort" name="smtp_port" value="587" required>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="smtpUsername" class="form-label">SMTP Username</label>
-                                        <input type="text" class="form-control" id="smtpUsername" name="smtp_username" required>
-                                    </div>
+                                    <label for="smtpPort" class="form-label">SMTP Port</label>
+                                    <input type="number" class="form-control form-control-modern" id="smtpPort" name="smtp_port" value="587">
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="smtpPassword" class="form-label">SMTP Password</label>
-                                        <input type="password" class="form-control" id="smtpPassword" name="smtp_password" required>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="fromEmail" class="form-label">From Email</label>
-                                        <input type="email" class="form-control" id="fromEmail" name="from_email" required>
-                                    </div>
+                                    <label for="smtpUsername" class="form-label">SMTP Username</label>
+                                    <input type="text" class="form-control form-control-modern" id="smtpUsername" name="smtp_username">
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="fromName" class="form-label">From Name</label>
-                                        <input type="text" class="form-control" id="fromName" name="from_name" placeholder="Business Documents">
+                                    <label for="smtpPassword" class="form-label">SMTP Password</label>
+                                    <input type="password" class="form-control form-control-modern" id="smtpPassword" name="smtp_password">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="fromEmail" class="form-label">From Email</label>
+                                    <input type="email" class="form-control form-control-modern" id="fromEmail" name="from_email">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="fromName" class="form-label">From Name</label>
+                                    <input type="text" class="form-control form-control-modern" id="fromName" name="from_name" placeholder="Business Documents">
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="useTls" name="use_tls" checked>
+                                        <label class="form-check-label" for="useTls">Use TLS</label>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="useTls" name="use_tls" checked>
-                                    <label class="form-check-label" for="useTls">
-                                        Use TLS
-                                    </label>
+                                <div class="col-12">
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary btn-modern">
+                                            <i class="bi bi-save me-2"></i>Save Settings
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-modern" id="testSmtpBtn">
+                                            <i class="bi bi-send me-2"></i>Test SMTP
+                                        </button>
+                                        <button type="button" class="btn btn-outline-info btn-modern" id="loadSmtpBtn">
+                                            <i class="bi bi-arrow-clockwise me-2"></i>Load Current
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Save SMTP Settings
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary" id="testSmtpBtn">
-                                    <i class="fas fa-paper-plane"></i> Test SMTP
-                                </button>
-                                <button type="button" class="btn btn-outline-info" id="loadSmtpBtn">
-                                    <i class="fas fa-sync"></i> Load Current Settings
-                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
 
-            <!-- Activity Logs Tab -->
-            <div class="tab-pane fade" id="activity">
-                <div class="card">
+            <!-- Activity Section -->
+            <div id="activity-section" class="content-section" style="display: none;">
+                <div class="content-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-history"></i> User Activity Logs</h5>
+                        <h5 class="mb-0"><i class="bi bi-activity me-2"></i>User Activity Logs</h5>
                     </div>
                     <div class="card-body">
                         <div id="activity-logs-container">
-                            <div class="text-center">
-                                <div class="spinner-border" role="status">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
                             </div>
@@ -409,254 +728,141 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Generated Documents Tab -->
-            <div class="tab-pane fade" id="documents">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-file-pdf"></i> Generated Documents</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="documents-container">
-                            <div class="text-center">
-                                <div class="spinner-border" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Backup & Restore Tab -->
-            <div class="tab-pane fade" id="backup">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-download"></i> Backup & Restore</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>Manual Backup</h6>
-                                <p class="text-muted">Create an immediate backup of database and files.</p>
-                                <button type="button" class="btn btn-primary" id="createBackupBtn">
-                                    <i class="fas fa-download"></i> Create Backup
-                                </button>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Backup Settings</h6>
-                                <form id="backupSettingsForm">
-                                    <div class="mb-3">
-                                        <label for="backupDirectory" class="form-label">Backup Directory</label>
-                                        <input type="text" class="form-control" id="backupDirectory" name="backup_directory" placeholder="/path/to/backup/folder">
-                                    </div>
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="fas fa-save"></i> Save Settings
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col-12">
-                                <h6>Automatic Backup</h6>
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle"></i> Automatic backups are created every 24 hours and saved to the configured backup directory.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
+    <!-- Alert Container -->
+    <div id="alert-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+    <!-- Modals -->
     <!-- Edit User Modal -->
-    <div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal fade modal-modern" id="editUserModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Edit User</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="editUserForm">
                         <input type="hidden" id="editUserId">
                         <div class="mb-3">
                             <label for="editUsername" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="editUsername" required>
+                            <input type="text" class="form-control form-control-modern" id="editUsername" required>
                         </div>
                         <div class="mb-3">
                             <label for="editEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="editEmail" required>
+                            <input type="email" class="form-control form-control-modern" id="editEmail" required>
                         </div>
                         <div class="mb-3">
                             <label for="editFirstName" class="form-label">First Name</label>
-                            <input type="text" class="form-control" id="editFirstName" required>
+                            <input type="text" class="form-control form-control-modern" id="editFirstName" required>
                         </div>
                         <div class="mb-3">
                             <label for="editLastName" class="form-label">Last Name</label>
-                            <input type="text" class="form-control" id="editLastName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editPassword" class="form-label">New Password (optional)</label>
-                            <input type="password" class="form-control" id="editPassword" minlength="6">
+                            <input type="text" class="form-control form-control-modern" id="editLastName" required>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveUserEdit()">Save Changes</button>
+                    <button type="button" class="btn btn-secondary btn-modern" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-modern" onclick="saveUserEdit()">Save Changes</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Upload Modal -->
-    <div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal fade modal-modern" id="uploadModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Upload File for <span id="uploadUserName"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="uploadForm">
                         <input type="hidden" id="uploadUserId">
                         <div class="mb-3">
                             <label for="uploadFile" class="form-label">Select File</label>
-                            <input type="file" class="form-control" id="uploadFile" name="file" accept=".pdf,.doc,.docx" required>
+                            <input type="file" class="form-control form-control-modern" id="uploadFile" name="file" accept=".pdf,.doc,.docx" required>
                         </div>
                         <div class="mb-3">
                             <label for="uploadDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="uploadDescription" name="description" rows="3"></textarea>
+                            <textarea class="form-control form-control-modern" id="uploadDescription" name="description" rows="3"></textarea>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="uploadFile()">Upload</button>
+                    <button type="button" class="btn btn-secondary btn-modern" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-modern" onclick="uploadFile()">Upload</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Message Modal -->
-    <div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal fade modal-modern" id="messageModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Send Message to <span id="messageUserName"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="messageForm">
                         <input type="hidden" id="messageUserId">
                         <div class="mb-3">
                             <label for="messageText" class="form-label">Message</label>
-                            <textarea class="form-control" id="messageText" rows="5" required placeholder="Enter your message..."></textarea>
+                            <textarea class="form-control form-control-modern" id="messageText" rows="5" required placeholder="Enter your message..."></textarea>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="sendMessage()">Send Message</button>
+                    <button type="button" class="btn btn-secondary btn-modern" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-modern" onclick="sendMessage()">Send Message</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- SMTP Test Modal -->
-    <div class="modal fade" id="smtpTestModal" tabindex="-1">
+    <div class="modal fade modal-modern" id="smtpTestModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Test SMTP Settings</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="smtpTestForm">
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="testEmail" class="form-label">Test Email Address</label>
-                            <input type="email" class="form-control" id="testEmail" name="test_email" required placeholder="Enter email to receive test message">
+                            <input type="email" class="form-control form-control-modern" id="testEmail" name="test_email" required placeholder="Enter email to receive test message">
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Send Test Email</button>
+                        <button type="button" class="btn btn-secondary btn-modern" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-modern">Send Test Email</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Colorful Footer -->
-    <footer class="mt-5" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 50%, #ff9ff3 100%); color: white;">
-        <div class="container py-4">
-            <div class="row">
-                <div class="col-md-3">
-                    <h6><i class="fas fa-crown me-2"></i>Admin Panel</h6>
-                    <p class="small">Comprehensive system administration and user management.</p>
-                </div>
-                <div class="col-md-3">
-                    <h6><i class="fas fa-users me-2"></i>User Management</h6>
-                    <div class="small">
-                        <span class="d-block">Total Users: {{ users|length }}</span>
-                        <span class="d-block text-white-50">Pending Requests: {{ pending_requests|length }}</span>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <h6><i class="fas fa-tools me-2"></i>Admin Tools</h6>
-                    <div class="small">
-                        <a href="/code-generator" class="text-white-50 text-decoration-none d-block">Code Generator</a>
-                        <a href="/messages" class="text-white-50 text-decoration-none d-block">Messages</a>
-                        <span class="text-white-50 d-block">SMTP Settings</span>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <h6><i class="fas fa-chart-line me-2"></i>System Status</h6>
-                    <div class="small">
-                        <span class="badge bg-success me-1">
-                            <i class="fas fa-check me-1"></i>Online
-                        </span>
-                        <span class="badge bg-info">
-                            <i class="fas fa-database me-1"></i>DB OK
-                        </span>
-                        <div class="mt-1 text-white-50">Admin since login</div>
-                    </div>
-                </div>
-            </div>
-            <hr class="my-3" style="border-color: rgba(255,255,255,0.2);">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <p class="mb-0 small">&copy; 2025 Business Documents Generator - Admin Dashboard</p>
-                </div>
-                <div class="col-md-6 text-end">
-                    <div class="small">
-                        <span class="badge bg-light text-dark me-2">
-                            <i class="fas fa-lock me-1"></i>Admin Access
-                        </span>
-                        <span class="badge bg-light text-dark">
-                            <i class="fas fa-cogs me-1"></i>Full Control
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Show notification
         function showAlert(message, type) {
             const alertContainer = document.getElementById('alert-container');
             const alertClass = type === 'error' ? 'danger' : type;
-            alertContainer.innerHTML = `
-                <div class="alert alert-${alertClass} alert-dismissible fade show" role="alert">
+            const alertHtml = `
+                <div class="alert alert-${alertClass} alert-dismissible fade show" role="alert" style="min-width: 300px;">
                     ${message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
+            alertContainer.insertAdjacentHTML('beforeend', alertHtml);
 
             // Auto dismiss after 5 seconds
             setTimeout(() => {
@@ -667,14 +873,92 @@
             }, 5000);
         }
 
-        // Upload for user
+        // Navigation functions
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').style.display = 'block';
+            
+            // Update active nav link
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelector(`[onclick="showSection('${sectionName}')"]`).classList.add('active');
+            
+            // Load data for specific sections
+            if (sectionName === 'activity') {
+                loadActivityLogs();
+            } else if (sectionName === 'dashboard') {
+                loadRecentActivity();
+            } else if (sectionName === 'settings') {
+                loadSmtpSettings();
+            }
+        }
+
+        // Sidebar toggle
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+
+        // Mobile sidebar toggle
+        function toggleMobileSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+
+        // Load recent activity for dashboard
+        function loadRecentActivity() {
+            fetch('/api/admin/activity-logs?page=1&per_page=5')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayRecentActivity(data.logs);
+                    } else {
+                        document.getElementById('recent-activity').innerHTML = '<div class="alert alert-warning">Failed to load recent activity</div>';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('recent-activity').innerHTML = '<div class="alert alert-danger">Error loading activity: ' + error.message + '</div>';
+                });
+        }
+
+        function displayRecentActivity(logs) {
+            if (logs.length === 0) {
+                document.getElementById('recent-activity').innerHTML = '<div class="text-center text-muted">No recent activity</div>';
+                return;
+            }
+
+            let html = '<div class="list-group list-group-flush">';
+            logs.forEach(log => {
+                html += `
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-circle bg-primary text-white me-3" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">
+                                ${log.user.charAt(0)}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">${log.description}</div>
+                                <div class="text-muted small">${log.created_at}</div>
+                            </div>
+                            <span class="badge bg-primary">${log.activity_type}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            document.getElementById('recent-activity').innerHTML = html;
+        }
+
+        // User management functions
         function uploadForUser(userId, userName) {
             document.getElementById('uploadUserId').value = userId;
             document.getElementById('uploadUserName').innerText = userName;
             new bootstrap.Modal(document.getElementById('uploadModal')).show();
         }
 
-        // Handle file upload
         function uploadFile() {
             const form = document.getElementById('uploadForm');
             const formData = new FormData(form);
@@ -699,38 +983,6 @@
             });
         }
 
-        // Respond to request
-        function respondToRequest(requestId, status) {
-            const response = prompt(`Enter your ${status} response:`);
-            if (response === null) return;
-
-            fetch(`/api/respond-request/${requestId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ status, response })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert(data.message, 'success');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showAlert(data.error, 'error');
-                }
-            })
-            .catch(error => {
-                showAlert('Response failed: ' + error.message, 'error');
-            });
-        }
-
-        // View full request
-        function viewFullRequest(requestId, title, description, userName) {
-            alert(`Request from: ${userName}\nTitle: ${title}\nDescription: ${description}`);
-        }
-
-        // Message user
         function messageUser(userId, userName) {
             document.getElementById('messageUserId').value = userId;
             document.getElementById('messageUserName').innerText = userName;
@@ -738,7 +990,6 @@
             new bootstrap.Modal(document.getElementById('messageModal')).show();
         }
 
-        // Send message
         function sendMessage() {
             const userId = document.getElementById('messageUserId').value;
             const message = document.getElementById('messageText').value;
@@ -769,18 +1020,15 @@
             });
         }
 
-        // Edit user
         function editUser(userId, username, email, firstName, lastName) {
             document.getElementById('editUserId').value = userId;
             document.getElementById('editUsername').value = username;
             document.getElementById('editEmail').value = email;
             document.getElementById('editFirstName').value = firstName;
             document.getElementById('editLastName').value = lastName;
-            document.getElementById('editPassword').value = '';
             new bootstrap.Modal(document.getElementById('editUserModal')).show();
         }
 
-        // Save user edit
         function saveUserEdit() {
             const userId = document.getElementById('editUserId').value;
             const userData = {
@@ -789,11 +1037,6 @@
                 first_name: document.getElementById('editFirstName').value,
                 last_name: document.getElementById('editLastName').value
             };
-
-            const password = document.getElementById('editPassword').value;
-            if (password) {
-                userData.password = password;
-            }
 
             fetch(`/api/admin/edit-user/${userId}`, {
                 method: 'PUT',
@@ -817,7 +1060,6 @@
             });
         }
 
-        // Toggle user verification
         function toggleVerification(userId, userName, newStatus) {
             if (confirm(`Are you sure you want to ${newStatus ? 'verify' : 'unverify'} ${userName}?`)) {
                 fetch(`/api/admin/toggle-user-verification/${userId}`, {
@@ -842,7 +1084,6 @@
             }
         }
 
-        // Delete user
         function deleteUser(userId, userName) {
             if (confirm(`Are you sure you want to DELETE ${userName}? This action cannot be undone!`)) {
                 fetch(`/api/admin/delete-user/${userId}`, {
@@ -863,7 +1104,57 @@
             }
         }
 
-        // SMTP Settings functions
+        // Request management
+        function respondToRequest(requestId, status) {
+            const response = prompt(`Enter your ${status} response:`);
+            if (response === null) return;
+
+            fetch(`/api/respond-request/${requestId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status, response })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Response failed: ' + error.message, 'error');
+            });
+        }
+
+        function viewFullRequest(requestId, title, description, userName) {
+            alert(`Request from: ${userName}\nTitle: ${title}\nDescription: ${description}`);
+        }
+
+        // SMTP Settings
+        function loadSmtpSettings() {
+            fetch('/api/admin/smtp-settings')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const settings = data.settings;
+                    document.getElementById('smtpServer').value = settings.smtp_server || '';
+                    document.getElementById('smtpPort').value = settings.smtp_port || 587;
+                    document.getElementById('smtpUsername').value = settings.smtp_username || '';
+                    document.getElementById('smtpPassword').value = '';
+                    document.getElementById('fromEmail').value = settings.from_email || '';
+                    document.getElementById('fromName').value = settings.from_name || '';
+                    document.getElementById('useTls').checked = settings.use_tls !== false;
+                }
+            })
+            .catch(error => {
+                console.error('Failed to load SMTP settings:', error);
+            });
+        }
+
         document.getElementById('smtpForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -890,31 +1181,8 @@
             });
         });
 
-        // Load SMTP settings
-        document.getElementById('loadSmtpBtn').addEventListener('click', function() {
-            fetch('/api/admin/smtp-settings')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const settings = data.settings;
-                    document.getElementById('smtpServer').value = settings.smtp_server || '';
-                    document.getElementById('smtpPort').value = settings.smtp_port || 587;
-                    document.getElementById('smtpUsername').value = settings.smtp_username || '';
-                    document.getElementById('smtpPassword').value = '';
-                    document.getElementById('fromEmail').value = settings.from_email || '';
-                    document.getElementById('fromName').value = settings.from_name || '';
-                    document.getElementById('useTls').checked = settings.use_tls !== false;
-                    showAlert('SMTP settings loaded', 'success');
-                } else {
-                    showAlert('Failed to load SMTP settings', 'error');
-                }
-            })
-            .catch(error => {
-                showAlert('Load SMTP settings failed: ' + error.message, 'error');
-            });
-        });
+        document.getElementById('loadSmtpBtn').addEventListener('click', loadSmtpSettings);
 
-        // Test SMTP
         document.getElementById('testSmtpBtn').addEventListener('click', function() {
             new bootstrap.Modal(document.getElementById('smtpTestModal')).show();
         });
@@ -945,7 +1213,7 @@
             });
         });
 
-        // Activity logs functions
+        // Activity logs
         function loadActivityLogs(page = 1) {
             fetch(`/api/admin/activity-logs?page=${page}&per_page=20`)
             .then(response => response.json())
@@ -963,11 +1231,21 @@
         }
 
         function displayActivityLogs(logs) {
-            let html = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>User</th><th>Activity</th><th>Description</th><th>IP Address</th><th>Date</th></tr></thead><tbody>';
+            let html = '<div class="table-responsive"><table class="table table-modern"><thead><tr><th>User</th><th>Activity</th><th>Description</th><th>IP Address</th><th>Date</th></tr></thead><tbody>';
             
             logs.forEach(log => {
                 html += `<tr>
-                    <td>${log.user} (${log.username})</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-circle bg-primary text-white me-2" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem;">
+                                ${log.user.charAt(0)}
+                            </div>
+                            <div>
+                                <div class="fw-semibold">${log.user}</div>
+                                <div class="text-muted small">@${log.username}</div>
+                            </div>
+                        </div>
+                    </td>
                     <td><span class="badge bg-primary">${log.activity_type}</span></td>
                     <td>${log.description}</td>
                     <td>${log.ip_address || 'N/A'}</td>
@@ -995,127 +1273,17 @@
             document.getElementById('activity-pagination').style.display = 'block';
         }
 
-        // Generated documents functions
-        function loadGeneratedDocuments() {
-            fetch('/api/admin/generated-documents')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    displayGeneratedDocuments(data.documents);
-                } else {
-                    document.getElementById('documents-container').innerHTML = '<div class="alert alert-danger">Failed to load documents</div>';
-                }
-            })
-            .catch(error => {
-                document.getElementById('documents-container').innerHTML = '<div class="alert alert-danger">Error loading documents: ' + error.message + '</div>';
-            });
-        }
-
-        function displayGeneratedDocuments(documents) {
-            if (documents.length === 0) {
-                document.getElementById('documents-container').innerHTML = '<div class="text-center py-4"><i class="fas fa-file-pdf fa-3x text-muted mb-3"></i><h5>No documents generated yet</h5></div>';
-                return;
-            }
-
-            let html = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>User</th><th>Document Type</th><th>Title</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
-            
-            documents.forEach(doc => {
-                html += `<tr>
-                    <td>${doc.user} (${doc.username})</td>
-                    <td><span class="badge bg-info">${doc.document_type}</span></td>
-                    <td>${doc.document_title}</td>
-                    <td>${doc.created_at}</td>
-                    <td><a href="/api/admin/download-generated-document/${doc.id}" class="btn btn-sm btn-primary"><i class="fas fa-download"></i> Download</a></td>
-                </tr>`;
-            });
-            
-            html += '</tbody></table></div>';
-            document.getElementById('documents-container').innerHTML = html;
-        }
-
-        // Backup functions
-        document.getElementById('createBackupBtn').addEventListener('click', function() {
-            this.disabled = true;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Backup...';
-            
-            fetch('/api/admin/backup-database', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    showAlert('Backup created successfully: ' + result.backup_path, 'success');
-                } else {
-                    showAlert(result.error, 'error');
-                }
-            })
-            .catch(error => {
-                showAlert('Backup failed: ' + error.message, 'error');
-            })
-            .finally(() => {
-                this.disabled = false;
-                this.innerHTML = '<i class="fas fa-download"></i> Create Backup';
-            });
-        });
-
-        document.getElementById('backupSettingsForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const backupDirectory = document.getElementById('backupDirectory').value;
-            
-            fetch('/api/admin/backup-settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ backup_directory: backupDirectory })
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    showAlert(result.message, 'success');
-                } else {
-                    showAlert(result.error, 'error');
-                }
-            })
-            .catch(error => {
-                showAlert('Backup settings save failed: ' + error.message, 'error');
-            });
-        });
-
-        // Load backup settings on page load
-        function loadBackupSettings() {
-            fetch('/api/admin/backup-settings')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('backupDirectory').value = data.backup_directory;
-                }
-            })
-            .catch(error => {
-                console.error('Failed to load backup settings:', error);
-            });
-        }
-
-        // Tab event listeners
+        // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
-            // Load activity logs when activity tab is shown
-            document.getElementById('activity-tab').addEventListener('shown.bs.tab', function() {
-                loadActivityLogs();
-            });
-
-            // Load documents when documents tab is shown
-            document.getElementById('documents-tab').addEventListener('shown.bs.tab', function() {
-                loadGeneratedDocuments();
-            });
-
-            // Load backup settings when backup tab is shown
-            document.getElementById('backup-tab').addEventListener('shown.bs.tab', function() {
-                loadBackupSettings();
-            });
-
-            // Load SMTP settings when settings tab is shown
-            document.getElementById('settings-tab').addEventListener('shown.bs.tab', function() {
-                document.getElementById('loadSmtpBtn').click();
-            });
+            loadRecentActivity();
         });
+
+        // Handle mobile responsiveness
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                document.getElementById('sidebar').classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
