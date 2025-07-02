@@ -471,94 +471,71 @@
         </div>
     </div>
 
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editUserForm">
+                        <input type="hidden" id="editUserId">
+                        <div class="mb-3">
+                            <label for="editUsername" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="editUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editFirstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="editFirstName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editLastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="editLastName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPassword" class="form-label">New Password (optional)</label>
+                            <input type="password" class="form-control" id="editPassword" minlength="6">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUserEdit()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Upload Modal -->
     <div class="modal fade" id="uploadModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Upload File for User</h5>
+                    <h5 class="modal-title">Upload File for <span id="uploadUserName"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="uploadForm" enctype="multipart/form-data">
-                    <div class="modal-body">
+                <div class="modal-body">
+                    <form id="uploadForm">
+                        <input type="hidden" id="uploadUserId">
                         <div class="mb-3">
-                            <label class="form-label">User</label>
-                            <input type="text" class="form-control" id="uploadUserName" readonly>
-                            <input type="hidden" id="uploadUserId" name="user_id">
-                        </div>
-                        <div class="mb-3">
-                            <label for="uploadFile" class="form-label">File</label>
-                            <input type="file" class="form-control" id="uploadFile" name="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" required>
-                            <div class="form-text">Allowed file types: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG (Max 16MB)</div>
+                            <label for="uploadFile" class="form-label">Select File</label>
+                            <input type="file" class="form-control" id="uploadFile" name="file" accept=".pdf,.doc,.docx" required>
                         </div>
                         <div class="mb-3">
                             <label for="uploadDescription" class="form-label">Description</label>
                             <textarea class="form-control" id="uploadDescription" name="description" rows="3"></textarea>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Upload File</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Response Modal -->
-    <div class="modal fade" id="responseModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Respond to Request</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="responseForm">
-                    <div class="modal-body">
-                        <input type="hidden" id="responseRequestId">
-                        <input type="hidden" id="responseStatus">
-                        <div class="mb-3">
-                            <label class="form-label">Status</label>
-                            <input type="text" class="form-control" id="responseStatusText" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label for="responseText" class="form-label">Response Message</label>
-                            <textarea class="form-control" id="responseText" name="response" rows="4" placeholder="Enter your response to the user..."></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Send Response</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- View Request Modal -->
-    <div class="modal fade" id="viewRequestModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Request Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">User</label>
-                        <input type="text" class="form-control" id="viewRequestUser" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Title</label>
-                        <input type="text" class="form-control" id="viewRequestTitle" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" id="viewRequestDescription" rows="6" readonly></textarea>
-                    </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="uploadFile()">Upload</button>
                 </div>
             </div>
         </div>
@@ -569,31 +546,22 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Send Message</h5>
+                    <h5 class="modal-title">Send Message to <span id="messageUserName"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="messageForm">
-                    <div class="modal-body">
+                <div class="modal-body">
+                    <form id="messageForm">
+                        <input type="hidden" id="messageUserId">
                         <div class="mb-3">
-                            <label class="form-label">To</label>
-                            <input type="text" class="form-control" id="messageUserName" readonly>
-                            <input type="hidden" id="messageUserId" name="recipient_id">
+                            <label for="messageText" class="form-label">Message</label>
+                            <textarea class="form-control" id="messageText" rows="5" required placeholder="Enter your message..."></textarea>
                         </div>
-                        <div class="mb-3">
-                            <label for="messageSubject" class="form-label">Subject</label>
-                            <input type="text" class="form-control" id="messageSubject" name="subject" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="messageContent" class="form-label">Message</label>
-                            <textarea class="form-control" id="messageContent" name="content" rows="5" required placeholder="You can use HTML formatting in your message..."></textarea>
-                            <div class="form-text">HTML formatting is supported (e.g., &lt;b&gt;bold&lt;/b&gt;, &lt;i&gt;italic&lt;/i&gt;, &lt;a href="..."&gt;links&lt;/a&gt;)</div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Send Message</button>
-                    </div>
-                </form>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="sendMessage()">Send Message</button>
+                </div>
             </div>
         </div>
     </div>
@@ -616,43 +584,6 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary">Send Test Email</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit User Modal -->
-    <div class="modal fade" id="editUserModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit User</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="editUserForm">
-                    <div class="modal-body">
-                        <input type="hidden" id="editUserId">
-                        <div class="mb-3">
-                            <label for="editUsername" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="editUsername" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="editEmail" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editFirstName" class="form-label">First Name</label>
-                            <input type="text" class="form-control" id="editFirstName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editLastName" class="form-label">Last Name</label>
-                            <input type="text" class="form-control" id="editLastName" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Update User</button>
                     </div>
                 </form>
             </div>
@@ -739,7 +670,7 @@
         // Upload for user
         function uploadForUser(userId, userName) {
             document.getElementById('uploadUserId').value = userId;
-            document.getElementById('uploadUserName').value = userName;
+            document.getElementById('uploadUserName').innerText = userName;
             new bootstrap.Modal(document.getElementById('uploadModal')).show();
         }
 
@@ -763,7 +694,6 @@
                     bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
                     setTimeout(() => location.reload(), 1000);
                 } else {
-```python
                     showAlert(result.error, 'error');
                 }
             } catch (error) {
@@ -821,7 +751,7 @@
         // Message user
         function messageUser(userId, userName) {
             document.getElementById('messageUserId').value = userId;
-            document.getElementById('messageUserName').value = userName;
+            document.getElementById('messageUserName').innerText = userName;
             document.getElementById('messageSubject').value = '';
             document.getElementById('messageContent').value = '';
             new bootstrap.Modal(document.getElementById('messageModal')).show();
@@ -866,662 +796,3 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        showAlert(data.message, 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        showAlert(data.error, 'error');
-                    }
-                })
-                .catch(error => {
-                    showAlert('Verification update failed: ' + error.message, 'error');
-                });
-            }
-        }
-
-        // SMTP Settings functionality
-        document.getElementById('loadSmtpBtn').addEventListener('click', async function() {
-            try {
-                const response = await fetch('/api/admin/smtp-settings');
-                const data = await response.json();
-
-                if (data.success) {
-                    const settings = data.settings;
-                    document.getElementById('smtpServer').value = settings.smtp_server;
-                    document.getElementById('smtpPort').value = settings.smtp_port;
-                    document.getElementById('smtpUsername').value = settings.smtp_username;
-                    document.getElementById('smtpPassword').value = settings.smtp_password === '••••••••' ? '' : settings.smtp_password;
-                    document.getElementById('fromEmail').value = settings.from_email;
-                    document.getElementById('fromName').value = settings.from_name;
-                    document.getElementById('useTls').checked = settings.use_tls;
-
-                    showAlert('SMTP settings loaded successfully', 'success');
-                } else {
-                    showAlert('Failed to load SMTP settings', 'error');
-                }
-            } catch (error) {
-                showAlert('Error loading SMTP settings: ' + error.message, 'error');
-            }
-        });
-
-        // Handle SMTP form submission
-        document.getElementById('smtpForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData);
-            data.use_tls = document.getElementById('useTls').checked;
-
-            try {
-                const response = await fetch('/api/admin/smtp-settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showAlert(result.message, 'success');
-                } else {
-                    showAlert(result.error, 'error');
-                }
-            } catch (error) {
-                showAlert('SMTP settings save failed: ' + error.message, 'error');
-            }
-        });
-
-        // Test SMTP
-        document.getElementById('testSmtpBtn').addEventListener('click', function() {
-            new bootstrap.Modal(document.getElementById('smtpTestModal')).show();
-        });
-
-        // Handle SMTP test
-        document.getElementById('smtpTestForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const testEmail = document.getElementById('testEmail').value;
-
-            try {
-                const response = await fetch('/api/admin/test-smtp', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ test_email: testEmail })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showAlert(result.message, 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('smtpTestModal')).hide();
-                } else {
-                    showAlert(result.error, 'error');
-                }
-            } catch (error) {
-                showAlert('SMTP test failed: ' + error.message, 'error');
-            }
-        });
-
-        // Edit user
-        function editUser(userId, username, email, firstName, lastName) {
-            document.getElementById('editUserId').value = userId;
-            document.getElementById('editUsername').value = username;
-            document.getElementById('editEmail').value = email;
-            document.getElementById('editFirstName').value = firstName;
-            document.getElementById('editLastName').value = lastName;
-            new bootstrap.Modal(document.getElementById('editUserModal')).show();
-        }
-
-        // Delete user
-        function deleteUser(userId, userName) {
-            if (confirm(`Are you sure you want to delete user ${userName}? This action cannot be undone.`)) {
-                fetch(`/api/admin/delete-user/${userId}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showAlert(data.message, 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        showAlert(data.error, 'error');
-                    }
-                })
-                .catch(error => {
-                    showAlert('User deletion failed: ' + error.message, 'error');
-                });
-            }
-        }
-
-        // Handle edit user form submission
-        document.getElementById('editUserForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const userId = document.getElementById('editUserId').value;
-            const userData = {
-                username: document.getElementById('editUsername').value,
-                email: document.getElementById('editEmail').value,
-                first_name: document.getElementById('editFirstName').value,
-                last_name: document.getElementById('editLastName').value
-            };
-
-            try {
-                const response = await fetch(`/api/admin/edit-user/${userId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(userData)
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showAlert(result.message, 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showAlert(result.error, 'error');
-                }
-            } catch (error) {
-                showAlert('User update failed: ' + error.message, 'error');
-            }
-        });
-
-        // Load SMTP settings on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('loadSmtpBtn').click();
-            
-            // Load activity logs when tab is clicked
-            const activityTab = document.getElementById('activity-tab');
-            if (activityTab) {
-                activityTab.addEventListener('click', loadActivityLogs);
-            }
-            
-            // Load documents when tab is clicked
-            const documentsTab = document.getElementById('documents-tab');
-            if (documentsTab) {
-                documentsTab.addEventListener('click', loadGeneratedDocuments);
-            }
-            
-            // Backup button
-            const createBackupBtn = document.getElementById('createBackupBtn');
-            if (createBackupBtn) {
-                createBackupBtn.addEventListener('click', createBackup);
-            }
-            
-            // Backup settings form
-            const backupSettingsForm = document.getElementById('backupSettingsForm');
-            if (backupSettingsForm) {
-                backupSettingsForm.addEventListener('submit', saveBackupSettings);
-            }
-        });
-
-        // Load activity logs
-        async function loadActivityLogs() {
-            try {
-                const response = await fetch('/api/admin/activity-logs');
-                const data = await response.json();
-                
-                if (data.success) {
-                    displayActivityLogs(data.logs);
-                }
-            } catch (error) {
-                console.error('Error loading activity logs:', error);
-            }
-        }
-
-        // Display activity logs
-        function displayActivityLogs(logs) {
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>User</th>
-                                <th>Activity</th>
-                                <th>Description</th>
-                                <th>IP Address</th>
-                                <th>Date/Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            logs.forEach(log => {
-                html += `
-                    <tr>
-                        <td>${log.user} (${log.username})</td>
-                        <td>${log.activity_type}</td>
-                        <td>${log.description}</td>
-                        <td>${log.ip_address || 'N/A'}</td>
-                        <td>${log.created_at}</td>
-                    </tr>
-                `;
-            });
-
-            html += '</tbody></table></div>';
-            document.getElementById('activity-logs-container').innerHTML = html;
-        }
-
-        // Load generated documents
-        async function loadGeneratedDocuments() {
-            try {
-                const response = await fetch('/api/admin/generated-documents');
-                const data = await response.json();
-                
-                if (data.success) {
-                    displayGeneratedDocuments(data.documents);
-                }
-            } catch (error) {
-                console.error('Error loading documents:', error);
-            }
-        }
-
-        // Display generated documents
-        function displayGeneratedDocuments(documents) {
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>User</th>
-                                <th>Document Type</th>
-                                <th>Title</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            documents.forEach(doc => {
-                html += `
-                    <tr>
-                        <td>${doc.user} (${doc.username})</td>
-                        <td>${doc.document_type}</td>
-                        <td>${doc.document_title}</td>
-                        <td>${doc.created_at}</td>
-                        <td>
-                            <a href="/api/admin/download-generated-document/${doc.id}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-download"></i> Download
-                            </a>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            html += '</tbody></table></div>';
-            document.getElementById('documents-container').innerHTML = html;
-        }
-
-        // Create backup
-        async function createBackup() {
-            try {
-                const response = await fetch('/api/admin/backup-database', {
-                    method: 'POST'
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    showAlert('Backup created successfully!', 'success');
-                } else {
-                    showAlert('Error: ' + data.error, 'error');
-                }
-            } catch (error) {
-                showAlert('Failed to create backup', 'error');
-            }
-        }
-
-        // Save backup settings
-        async function saveBackupSettings(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData);
-            
-            try {
-                const response = await fetch('/api/admin/backup-settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showAlert('Backup settings saved successfully!', 'success');
-                } else {
-                    showAlert('Error: ' + result.error, 'error');
-                }
-            } catch (error) {
-                showAlert('Failed to save backup settings', 'error');
-            }
-        }
-    </script>
-    <script>
-        function openUploadModal(userId) {
-            document.getElementById('uploadUserId').value = userId;
-            new bootstrap.Modal(document.getElementById('uploadModal')).show();
-        }
-
-        function uploadFile() {
-            const form = document.getElementById('uploadForm');
-            const formData = new FormData(form);
-            const userId = document.getElementById('uploadUserId').value;
-
-            fetch(`/api/upload-pdf/${userId}`, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('File uploaded successfully!');
-                    bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Upload failed');
-            });
-        }
-
-        function respondToRequest(requestId, status) {
-            const response = prompt(`Enter response for this ${status} request:`);
-            if (response === null) return;
-
-            fetch(`/api/respond-request/${requestId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    status: status,
-                    response: response
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Response sent successfully!');
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to send response');
-            });
-        }
-
-        // Admin functionality for user management
-        function loadAllUsers() {
-            fetch('/api/admin/users')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    displayUsersTable(data.users);
-                    document.getElementById('usersCard').style.display = 'block';
-                    document.getElementById('documentsCard').style.display = 'none';
-                    document.getElementById('logsCard').style.display = 'none';
-                }
-            })
-            .catch(error => console.error('Error loading users:', error));
-        }
-
-        function displayUsersTable(users) {
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Username</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Joined</th>
-                                <th>Last Login</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            users.forEach(user => {
-                html += `
-                    <tr>
-                        <td>${user.username}</td>
-                        <td>${user.first_name} ${user.last_name}</td>
-                        <td>${user.email}</td>
-                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
-                        <td>${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning me-1" onclick="editUser(${user.id}, '${user.username}', '${user.email}', '${user.first_name}', '${user.last_name}')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id}, '${user.username}')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            html += '</tbody></table></div>';
-            document.getElementById('usersTable').innerHTML = html;
-        }
-
-        function editUser(userId, username, email, firstName, lastName) {
-            document.getElementById('editUserId').value = userId;
-            document.getElementById('editUsername').value = username;
-            document.getElementById('editEmail').value = email;
-            document.getElementById('editFirstName').value = firstName;
-            document.getElementById('editLastName').value = lastName;
-            document.getElementById('editPassword').value = '';
-            new bootstrap.Modal(document.getElementById('editUserModal')).show();
-        }
-
-        function saveUserEdit() {
-            const userId = document.getElementById('editUserId').value;
-            const data = {
-                username: document.getElementById('editUsername').value,
-                email: document.getElementById('editEmail').value,
-                first_name: document.getElementById('editFirstName').value,
-                last_name: document.getElementById('editLastName').value
-            };
-
-            const password = document.getElementById('editPassword').value;
-            if (password) {
-                // Update password separately
-                fetch(`/api/admin/update-user-password/${userId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: password })
-                });
-            }
-
-            fetch(`/api/admin/edit-user/${userId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('User updated successfully!');
-                    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
-                    loadAllUsers();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            });
-        }
-
-        function deleteUser(userId, username) {
-            if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
-                fetch(`/api/admin/delete-user/${userId}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('User deleted successfully!');
-                        loadAllUsers();
-                    } else {
-                        alert('Error: ' + data.error);
-                    }
-                });
-            }
-        }
-
-        function viewGeneratedDocuments() {
-            fetch('/api/admin/generated-documents')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    displayDocumentsTable(data.documents);
-                    document.getElementById('documentsCard').style.display = 'block';
-                    document.getElementById('usersCard').style.display = 'none';
-                    document.getElementById('logsCard').style.display = 'none';
-                }
-            });
-        }
-
-        function displayDocumentsTable(documents) {
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>User</th>
-                                <th>Document Type</th>
-                                <th>Title</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            documents.forEach(doc => {
-                html += `
-                    <tr>
-                        <td>${doc.user} (${doc.username})</td>
-                        <td>${doc.document_type}</td>
-                        <td>${doc.document_title}</td>
-                        <td>${doc.created_at}</td>
-                        <td>
-                            <a href="/api/admin/download-generated-document/${doc.id}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-download"></i> Download
-                            </a>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            html += '</tbody></table></div>';
-            document.getElementById('documentsTable').innerHTML = html;
-        }
-
-        function viewActivityLogs() {
-            fetch('/api/admin/activity-logs')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    displayLogsTable(data.logs);
-                    document.getElementById('logsCard').style.display = 'block';
-                    document.getElementById('documentsCard').style.display = 'none';
-                    document.getElementById('usersCard').style.display = 'none';
-                }
-            });
-        }
-
-        function displayLogsTable(logs) {
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>User</th>
-                                <th>Activity</th>
-                                <th>Description</th>
-                                <th>IP Address</th>
-                                <th>Date/Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            logs.forEach(log => {
-                html += `
-                    <tr>
-                        <td>${log.user} (${log.username})</td>
-                        <td>${log.activity_type}</td>
-                        <td>${log.description}</td>
-                        <td>${log.ip_address || 'N/A'}</td>
-                        <td>${log.created_at}</td>
-                    </tr>
-                `;
-            });
-
-            html += '</tbody></table></div>';
-            document.getElementById('logsTable').innerHTML = html;
-        }
-
-        function backupDatabase() {
-            if (confirm('Create backup of database and files?')) {
-                fetch('/api/admin/backup-database', {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Backup created successfully!');
-                    } else {
-                        alert('Error: ' + data.error);
-                    }
-                });
-            }
-        }
-
-        function showBackupSettings() {
-            fetch('/api/admin/backup-settings')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('backupDirectory').value = data.backup_directory;
-                    new bootstrap.Modal(document.getElementById('backupSettingsModal')).show();
-                }
-            });
-        }
-
-        function saveBackupSettings() {
-            const backupDir = document.getElementById('backupDirectory').value;
-
-            fetch('/api/admin/backup-settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ backup_directory: backupDir })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Backup settings saved!');
-                    bootstrap.Modal.getInstance(document.getElementById('backupSettingsModal')).hide();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            });
-        }
-    </script>
-</body>
-</html>

@@ -211,7 +211,7 @@ def login():
             data = request.get_json()
             if not data:
                 return jsonify({'success': False, 'error': 'No data provided'}), 400
-            
+
             username = data.get('username', '').strip()
             password = data.get('password', '')
 
@@ -235,7 +235,7 @@ def login():
                 return jsonify({'success': True, 'redirect': url_for('dashboard')})
             else:
                 return jsonify({'success': False, 'error': 'Invalid username or password'}), 400
-                
+
         except Exception as e:
             logging.error(f"Login error: {str(e)}")
             return jsonify({'success': False, 'error': 'Login failed. Please try again.'}), 500
@@ -247,10 +247,10 @@ def logout():
     """User logout"""
     user_id = session.get('user_id')
     username = session.get('username')
-    
+
     if user_id:
         log_activity(user_id, 'logout', f"User {username} logged out", request.remote_addr, request.user_agent.string)
-    
+
     session.clear()
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
@@ -262,10 +262,10 @@ def logout():
 def profile():
     """User profile management"""
     user = User.query.get(session['user_id'])
-    
+
     if request.method == 'POST':
         data = request.get_json()
-        
+
         # Check if username or email already exists (excluding current user)
         existing_username = User.query.filter(User.username == data.get('username'), User.id != user.id).first()
         if existing_username:
@@ -832,7 +832,8 @@ def get_public_settings():
 
     except Exception as e:
         logging.error(f"Error getting public settings: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to get settings'}), 500
+        return jsonify({'success': False, 'error': 'Failed to get settings'}), ```python
+500
 
 @app.route('/api/get-settings')
 def get_settings():
@@ -1271,47 +1272,133 @@ def edit_user(user_id):
 @app.route('/api/admin/delete-user/<int:user_id>', methods=['DELETE'])
 @admin_required
 def delete_user(user_id):
-    """Delete user and all related data"""
+    """Delete a user"""
     try:
-        user = User.query.get(user_id)
-        if not user:
-            return jsonify({'success': False, 'error': 'User not found'}), 404
+        user = User.query.get_or_404(user_id)
 
         if user.is_admin:
-            return jsonify({'success': False, 'error': 'Cannot delete admin users'}), 400
+            return jsonify({'success': False, 'error': 'Cannot delete admin user'}), 400
 
-        user_name = f"{user.first_name} {user.last_name}"
+        # Delete user's files and messages
+        for pdf_code in user.pdf_codes:
+            db.session.delete(pdf_code)
 
-        # Manually delete related records that might cause foreign key issues
-        # Delete messages where user is sender or recipient
-        Message.query.filter_by(sender_id=user_id).delete()
-        Message.query.filter_by(recipient_id=user_id).delete()
+        for message in user.messages:
+            db.session.delete(message)
 
-        # Delete user business settings
-        UserBusinessSettings.query.filter_by(user_id=user_id).delete()
+        for request in user.pdf_requests:
+            db.session.delete(request)
 
-        # Delete client settings
-        ClientSettings.query.filter_by(user_id=user_id).delete()
-
-        # Delete download codes
-        DownloadCode.query.filter_by(user_id=user_id).delete()
-
-        # Delete activity logs
-        ActivityLog.query.filter_by(user_id=user_id).delete()
-
-        # Delete generated documents
-        GeneratedDocument.query.filter_by(user_id=user_id).delete()
-
-        # Delete user (remaining cascades will handle PDF codes and requests)
         db.session.delete(user)
         db.session.commit()
 
-        return jsonify({'success': True, 'message': f'User {user_name} deleted successfully'})
+        # Log deletion activity
+        log_activity(session['user_id'], 'user_deletion', f"Admin deleted user {user.username}", request.remote_addr, request.user_agent.string)
+
+        return jsonify({'success': True, 'message': 'User deleted successfully'})
 
     except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error deleting user: {str(e)}")
+        logging.error(f"User deletion error: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to delete user'}), 500
+
+@app.route('/api/admin/edit-user/<int:user_id>', methods=['PUT'])
+@admin_required
+def edit_user(user_id):
+    """Edit a user's details"""
+    try:
+        data = request.get_json()
+        user = User.query.get_or_404(user_id)
+
+        # Update user fields
+        if 'username' in data:
+            # Check if username is already taken
+            existing_user = User.query.filter(User.username == data['username'], User.id != user_id).first()
+            if existing_user:
+                return jsonify({'success': False, 'error': 'Username already exists'}), 400
+            user.username = data['username']
+
+        if 'email' in data:
+            # Check if email is already taken
+            existing_user = User.query.filter(User.email == data['email'], User.id != user_id).first()
+            if existing_user:
+                return jsonify({'success': False, 'error': 'Email already exists'}), 400
+            user.email = data['email']
+
+        if 'first_name' in data:
+            user.first_name = data['first_name']
+
+        if 'last_name' in data:
+            user.last_name = data['last_name']
+
+        if 'password' in data and data['password']:
+            user.set_password(data['password'])
+
+        db.session.commit()
+
+        # Log edit activity
+        log_activity(session['user_id'], 'user_edit', f"Admin edited user {user.username}", request.remote_addr, request.user_agent.string)
+
+        return jsonify({'success': True, 'message': 'User updated successfully'})
+
+    except Exception as e:
+        logging.error(f"User edit error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to update user'}), 500
+
+@app.route('/api/admin/toggle-verification/<int:user_id>', methods=['POST'])
+@admin_required
+def toggle_user_verification(user_id):
+    """Toggle user verification status"""
+    try:
+        data = request.get_json()
+        user = User.query.get_or_404(user_id)
+
+        verify = data.get('verify', False)
+        user.is_verified = verify
+
+        db.session.commit()
+
+        action = 'verified' if verify else 'unverified'
+        # Log verification activity
+        log_activity(session['user_id'], 'user_verification', f"Admin {action} user {user.username}", request.remote_addr, request.user_agent.string)
+
+        return jsonify({'success': True, 'message': f'User {action} successfully'})
+
+    except Exception as e:
+        logging.error(f"User verification toggle error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to toggle verification'}), 500
+
+@app.route('/api/admin/send-message/<int:user_id>', methods=['POST'])
+@admin_required
+def send_admin_message(user_id):
+    """Send a message to a user"""
+    try:
+        data = request.get_json()
+        message_text = data.get('message', '').strip()
+
+        if not message_text:
+            return jsonify({'success': False, 'error': 'Message cannot be empty'}), 400
+
+        user = User.query.get_or_404(user_id)
+
+        # Create new message
+        message = Message(
+            user_id=user_id,
+            title='Message from Admin',
+            content=message_text,
+            sender_type='admin'
+        )
+
+        db.session.add(message)
+        db.session.commit()
+
+        # Log message activity
+        log_activity(session['user_id'], 'admin_message', f"Admin sent message to user {user.username}", request.remote_addr, request.user_agent.string)
+
+        return jsonify({'success': True, 'message': 'Message sent successfully'})
+
+    except Exception as e:
+        logging.error(f"Send message error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to send message'}), 500
 
 @app.route('/api/admin/update-user-password/<int:user_id>', methods=['POST'])
 @admin_required
@@ -1348,7 +1435,7 @@ def get_activity_logs():
     try:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 50, type=int)
-        
+
         logs = ActivityLog.query.order_by(ActivityLog.created_at.desc()).paginate(
             page=page, per_page=per_page, error_out=False
         )
@@ -1383,7 +1470,7 @@ def get_generated_documents():
     """Get all generated documents for admin"""
     try:
         documents = GeneratedDocument.query.order_by(GeneratedDocument.created_at.desc()).all()
-        
+
         documents_data = []
         for doc in documents:
             documents_data.append({
@@ -1431,16 +1518,16 @@ def save_generated_document():
     """Save generated document info"""
     try:
         data = request.get_json()
-        
+
         # Create generated documents directory if it doesn't exist
         docs_dir = os.path.join(os.getcwd(), 'generated_documents')
         os.makedirs(docs_dir, exist_ok=True)
-        
+
         # Generate filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"{data.get('document_type', 'document')}_{timestamp}.pdf"
         file_path = os.path.join(docs_dir, filename)
-        
+
         # Save document record
         doc = GeneratedDocument(
             user_id=session['user_id'],
@@ -1448,20 +1535,20 @@ def save_generated_document():
             document_title=data.get('document_title', 'Untitled Document'),
             file_path=file_path
         )
-        
+
         db.session.add(doc)
         db.session.commit()
-        
+
         # Log PDF generation activity
         user = User.query.get(session['user_id'])
         log_activity(session['user_id'], 'pdf_generated', f"User {user.username} generated {data.get('document_type')} - {data.get('document_title')}", request.remote_addr, request.user_agent.string)
-        
+
         return jsonify({
             'success': True,
             'file_path': file_path,
             'document_id': doc.id
         })
-        
+
     except Exception as e:
         logging.error(f"Error saving generated document: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to save document info'}), 500
@@ -1473,32 +1560,32 @@ def backup_database():
     try:
         import shutil
         from datetime import datetime
-        
+
         # Create backups directory
         backup_dir = get_backup_directory()
         os.makedirs(backup_dir, exist_ok=True)
-        
+
         # Generate backup filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         backup_filename = f"database_backup_{timestamp}.db"
         backup_path = os.path.join(backup_dir, backup_filename)
-        
+
         # Copy database file
         db_path = os.path.join(os.getcwd(), 'instance', 'business_docs.db')
         if os.path.exists(db_path):
             shutil.copy2(db_path, backup_path)
-            
+
             # Also backup uploads and generated documents
             if os.path.exists('uploads'):
                 shutil.copytree('uploads', os.path.join(backup_dir, f"uploads_backup_{timestamp}"), dirs_exist_ok=True)
-            
+
             if os.path.exists('generated_documents'):
                 shutil.copytree('generated_documents', os.path.join(backup_dir, f"generated_documents_backup_{timestamp}"), dirs_exist_ok=True)
-            
+
             return jsonify({'success': True, 'message': 'Backup created successfully', 'backup_path': backup_path})
         else:
             return jsonify({'success': False, 'error': 'Database file not found'}), 404
-            
+
     except Exception as e:
         logging.error(f"Error creating backup: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to create backup'}), 500
@@ -1511,16 +1598,16 @@ def backup_settings():
         if request.method == 'GET':
             backup_dir_setting = SystemSettings.query.filter_by(setting_key='backup_directory').first()
             backup_dir = backup_dir_setting.setting_value if backup_dir_setting else os.path.join(os.getcwd(), 'backups')
-            
+
             return jsonify({'success': True, 'backup_directory': backup_dir})
-            
+
         elif request.method == 'POST':
             data = request.get_json()
             new_backup_dir = data.get('backup_directory')
-            
+
             if not new_backup_dir:
                 return jsonify({'success': False, 'error': 'Backup directory is required'}), 400
-            
+
             # Update or create setting
             backup_dir_setting = SystemSettings.query.filter_by(setting_key='backup_directory').first()
             if backup_dir_setting:
@@ -1529,11 +1616,11 @@ def backup_settings():
             else:
                 backup_dir_setting = SystemSettings(setting_key='backup_directory', setting_value=new_backup_dir)
                 db.session.add(backup_dir_setting)
-            
+
             db.session.commit()
-            
+
             return jsonify({'success': True, 'message': 'Backup directory updated successfully'})
-            
+
     except Exception as e:
         logging.error(f"Error handling backup settings: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to handle backup settings'}), 500
@@ -1549,6 +1636,7 @@ def offline():
 
 @app.route('/api/get-current-user')
 def get_current_user():
+```python
     """Get current logged in user info"""
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
@@ -1558,14 +1646,14 @@ def get_current_user():
                 'username': user.username,
                 'name': f"{user.first_name} {user.last_name}"
             })
-    
+
     return jsonify({'success': False, 'error': 'Not logged in'}), 401
 
 def setup_automatic_backup():
     """Setup automatic backup every 24 hours"""
     import threading
     import time
-    
+
     def backup_scheduler():
         while True:
             time.sleep(24 * 60 * 60)  # 24 hours
@@ -1573,31 +1661,31 @@ def setup_automatic_backup():
                 with app.app_context():
                     import shutil
                     from datetime import datetime
-                    
+
                     backup_dir = get_backup_directory()
                     os.makedirs(backup_dir, exist_ok=True)
-                    
+
                     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    
+
                     # Backup database
                     db_path = os.path.join(os.getcwd(), 'instance', 'business_docs.db')
                     if os.path.exists(db_path):
                         backup_db_path = os.path.join(backup_dir, f"auto_database_backup_{timestamp}.db")
                         shutil.copy2(db_path, backup_db_path)
-                    
+
                     # Backup uploads
                     if os.path.exists('uploads'):
                         shutil.copytree('uploads', os.path.join(backup_dir, f"auto_uploads_backup_{timestamp}"), dirs_exist_ok=True)
-                    
+
                     # Backup generated documents
                     if os.path.exists('generated_documents'):
                         shutil.copytree('generated_documents', os.path.join(backup_dir, f"auto_generated_documents_backup_{timestamp}"), dirs_exist_ok=True)
-                    
+
                     logging.info(f"Automatic backup completed: {timestamp}")
-                    
+
             except Exception as e:
                 logging.error(f"Automatic backup failed: {str(e)}")
-    
+
     # Start backup scheduler in background thread
     backup_thread = threading.Thread(target=backup_scheduler, daemon=True)
     backup_thread.start()
