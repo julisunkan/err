@@ -1282,11 +1282,36 @@ def delete_user(user_id):
         for pdf_code in user.pdf_codes:
             db.session.delete(pdf_code)
 
-        for message in user.messages:
+        # Delete sent messages
+        for message in user.sent_messages:
+            db.session.delete(message)
+
+        # Delete received messages
+        for message in user.received_messages:
             db.session.delete(message)
 
         for request in user.pdf_requests:
             db.session.delete(request)
+
+        # Delete user's business settings
+        user_settings = UserBusinessSettings.query.filter_by(user_id=user.id).first()
+        if user_settings:
+            db.session.delete(user_settings)
+
+        # Delete user's client settings
+        client_settings = ClientSettings.query.filter_by(user_id=user.id).all()
+        for client in client_settings:
+            db.session.delete(client)
+
+        # Delete user's activity logs
+        activity_logs = ActivityLog.query.filter_by(user_id=user.id).all()
+        for log in activity_logs:
+            db.session.delete(log)
+
+        # Delete user's generated documents
+        generated_docs = GeneratedDocument.query.filter_by(user_id=user.id).all()
+        for doc in generated_docs:
+            db.session.delete(doc)
 
         db.session.delete(user)
         db.session.commit()
@@ -1297,6 +1322,7 @@ def delete_user(user_id):
         return jsonify({'success': True, 'message': 'User deleted successfully'})
 
     except Exception as e:
+        db.session.rollback()
         logging.error(f"User deletion error: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to delete user'}), 500
 
