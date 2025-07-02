@@ -832,8 +832,7 @@ def get_public_settings():
 
     except Exception as e:
         logging.error(f"Error getting public settings: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to get settings'}), ```python
-500
+        return jsonify({'success': False, 'error': 'Failed to get settings'}), 500
 
 @app.route('/api/get-settings')
 def get_settings():
@@ -1301,71 +1300,7 @@ def delete_user(user_id):
         logging.error(f"User deletion error: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to delete user'}), 500
 
-@app.route('/api/admin/edit-user/<int:user_id>', methods=['PUT'])
-@admin_required
-def edit_user(user_id):
-    """Edit a user's details"""
-    try:
-        data = request.get_json()
-        user = User.query.get_or_404(user_id)
 
-        # Update user fields
-        if 'username' in data:
-            # Check if username is already taken
-            existing_user = User.query.filter(User.username == data['username'], User.id != user_id).first()
-            if existing_user:
-                return jsonify({'success': False, 'error': 'Username already exists'}), 400
-            user.username = data['username']
-
-        if 'email' in data:
-            # Check if email is already taken
-            existing_user = User.query.filter(User.email == data['email'], User.id != user_id).first()
-            if existing_user:
-                return jsonify({'success': False, 'error': 'Email already exists'}), 400
-            user.email = data['email']
-
-        if 'first_name' in data:
-            user.first_name = data['first_name']
-
-        if 'last_name' in data:
-            user.last_name = data['last_name']
-
-        if 'password' in data and data['password']:
-            user.set_password(data['password'])
-
-        db.session.commit()
-
-        # Log edit activity
-        log_activity(session['user_id'], 'user_edit', f"Admin edited user {user.username}", request.remote_addr, request.user_agent.string)
-
-        return jsonify({'success': True, 'message': 'User updated successfully'})
-
-    except Exception as e:
-        logging.error(f"User edit error: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to update user'}), 500
-
-@app.route('/api/admin/toggle-verification/<int:user_id>', methods=['POST'])
-@admin_required
-def toggle_user_verification(user_id):
-    """Toggle user verification status"""
-    try:
-        data = request.get_json()
-        user = User.query.get_or_404(user_id)
-
-        verify = data.get('verify', False)
-        user.is_verified = verify
-
-        db.session.commit()
-
-        action = 'verified' if verify else 'unverified'
-        # Log verification activity
-        log_activity(session['user_id'], 'user_verification', f"Admin {action} user {user.username}", request.remote_addr, request.user_agent.string)
-
-        return jsonify({'success': True, 'message': f'User {action} successfully'})
-
-    except Exception as e:
-        logging.error(f"User verification toggle error: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to toggle verification'}), 500
 
 @app.route('/api/admin/send-message/<int:user_id>', methods=['POST'])
 @admin_required
