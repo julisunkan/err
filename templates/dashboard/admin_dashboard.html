@@ -761,8 +761,9 @@
                 if (result.success) {
                     showAlert(result.message, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
-                    setTimeout(() => location.reload(), 1000);```python
+                    setTimeout(() => location.reload(), 1000);
                 } else {
+```python
                     showAlert(result.error, 'error');
                 }
             } catch (error) {
@@ -1034,6 +1035,325 @@
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('loadSmtpBtn').click();
         });
+    </script>
+    <script>
+        function openUploadModal(userId) {
+            document.getElementById('uploadUserId').value = userId;
+            new bootstrap.Modal(document.getElementById('uploadModal')).show();
+        }
+
+        function uploadFile() {
+            const form = document.getElementById('uploadForm');
+            const formData = new FormData(form);
+            const userId = document.getElementById('uploadUserId').value;
+
+            fetch(`/api/upload-pdf/${userId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('File uploaded successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Upload failed');
+            });
+        }
+
+        function respondToRequest(requestId, status) {
+            const response = prompt(`Enter response for this ${status} request:`);
+            if (response === null) return;
+
+            fetch(`/api/respond-request/${requestId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: status,
+                    response: response
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Response sent successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to send response');
+            });
+        }
+
+        // Admin functionality for user management
+        function loadAllUsers() {
+            fetch('/api/admin/users')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayUsersTable(data.users);
+                    document.getElementById('usersCard').style.display = 'block';
+                    document.getElementById('documentsCard').style.display = 'none';
+                    document.getElementById('logsCard').style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Error loading users:', error));
+        }
+
+        function displayUsersTable(users) {
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Joined</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            users.forEach(user => {
+                html += `
+                    <tr>
+                        <td>${user.username}</td>
+                        <td>${user.first_name} ${user.last_name}</td>
+                        <td>${user.email}</td>
+                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                        <td>${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning me-1" onclick="editUser(${user.id}, '${user.username}', '${user.email}', '${user.first_name}', '${user.last_name}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id}, '${user.username}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table></div>';
+            document.getElementById('usersTable').innerHTML = html;
+        }
+
+        function editUser(userId, username, email, firstName, lastName) {
+            document.getElementById('editUserId').value = userId;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editFirstName').value = firstName;
+            document.getElementById('editLastName').value = lastName;
+            document.getElementById('editPassword').value = '';
+            new bootstrap.Modal(document.getElementById('editUserModal')).show();
+        }
+
+        function saveUserEdit() {
+            const userId = document.getElementById('editUserId').value;
+            const data = {
+                username: document.getElementById('editUsername').value,
+                email: document.getElementById('editEmail').value,
+                first_name: document.getElementById('editFirstName').value,
+                last_name: document.getElementById('editLastName').value
+            };
+
+            const password = document.getElementById('editPassword').value;
+            if (password) {
+                // Update password separately
+                fetch(`/api/admin/update-user-password/${userId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: password })
+                });
+            }
+
+            fetch(`/api/admin/edit-user/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('User updated successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                    loadAllUsers();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+        }
+
+        function deleteUser(userId, username) {
+            if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+                fetch(`/api/admin/delete-user/${userId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('User deleted successfully!');
+                        loadAllUsers();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                });
+            }
+        }
+
+        function viewGeneratedDocuments() {
+            fetch('/api/admin/generated-documents')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayDocumentsTable(data.documents);
+                    document.getElementById('documentsCard').style.display = 'block';
+                    document.getElementById('usersCard').style.display = 'none';
+                    document.getElementById('logsCard').style.display = 'none';
+                }
+            });
+        }
+
+        function displayDocumentsTable(documents) {
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Document Type</th>
+                                <th>Title</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            documents.forEach(doc => {
+                html += `
+                    <tr>
+                        <td>${doc.user} (${doc.username})</td>
+                        <td>${doc.document_type}</td>
+                        <td>${doc.document_title}</td>
+                        <td>${doc.created_at}</td>
+                        <td>
+                            <a href="/api/admin/download-generated-document/${doc.id}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table></div>';
+            document.getElementById('documentsTable').innerHTML = html;
+        }
+
+        function viewActivityLogs() {
+            fetch('/api/admin/activity-logs')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayLogsTable(data.logs);
+                    document.getElementById('logsCard').style.display = 'block';
+                    document.getElementById('documentsCard').style.display = 'none';
+                    document.getElementById('usersCard').style.display = 'none';
+                }
+            });
+        }
+
+        function displayLogsTable(logs) {
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Activity</th>
+                                <th>Description</th>
+                                <th>IP Address</th>
+                                <th>Date/Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            logs.forEach(log => {
+                html += `
+                    <tr>
+                        <td>${log.user} (${log.username})</td>
+                        <td>${log.activity_type}</td>
+                        <td>${log.description}</td>
+                        <td>${log.ip_address || 'N/A'}</td>
+                        <td>${log.created_at}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table></div>';
+            document.getElementById('logsTable').innerHTML = html;
+        }
+
+        function backupDatabase() {
+            if (confirm('Create backup of database and files?')) {
+                fetch('/api/admin/backup-database', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Backup created successfully!');
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                });
+            }
+        }
+
+        function showBackupSettings() {
+            fetch('/api/admin/backup-settings')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('backupDirectory').value = data.backup_directory;
+                    new bootstrap.Modal(document.getElementById('backupSettingsModal')).show();
+                }
+            });
+        }
+
+        function saveBackupSettings() {
+            const backupDir = document.getElementById('backupDirectory').value;
+
+            fetch('/api/admin/backup-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ backup_directory: backupDir })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Backup settings saved!');
+                    bootstrap.Modal.getInstance(document.getElementById('backupSettingsModal')).hide();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+        }
     </script>
 </body>
 </html>

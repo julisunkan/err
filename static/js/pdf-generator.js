@@ -487,6 +487,20 @@ class SimplePDFGenerator {
             this.addSimpleTotals(documentData.totals, documentData.business.currency);
             await this.addSimpleFooter(documentData.business, documentData.notes);
 
+            // Add footer with page numbers and username
+            const pageCount = this.doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                this.doc.setPage(i);
+                this.doc.setFontSize(8);
+                this.doc.setTextColor(128, 128, 128);
+                this.doc.text(`Page ${i} of ${pageCount}`, this.pageWidth - 20, this.pageHeight - 10, { align: 'right' });
+
+                // Add generation info with username (requirement #5)
+                const generatedDate = new Date().toLocaleDateString();
+                const currentUsername = sessionStorage.getItem('current_username') || 'Unknown User';
+                this.doc.text(`Generated on ${generatedDate} by ${currentUsername}`, 20, this.pageHeight - 10);
+            }
+
             return this.doc;
 
         } catch (error) {
