@@ -1,4 +1,3 @@
-
 import os
 import json
 import logging
@@ -47,7 +46,7 @@ db.init_app(app)
 
 with app.app_context():
     db.create_all()
-    
+
     # Create default admin user if none exists
     admin = User.query.filter_by(is_admin=True).first()
     if not admin:
@@ -82,7 +81,7 @@ def admin_required(f):
         if 'user_id' not in session:
             flash('Please log in to access this page.', 'error')
             return redirect(url_for('login'))
-        
+
         user = User.query.get(session['user_id'])
         if not user or not user.is_admin:
             flash('Admin access required.', 'error')
@@ -97,26 +96,26 @@ def send_email(to_email, subject, body, is_html=False):
         if not smtp_settings:
             logging.error("No active SMTP settings found")
             return False
-        
+
         msg = MIMEMultipart()
         msg['From'] = f"{smtp_settings.from_name or 'Business Docs'} <{smtp_settings.from_email}>"
         msg['To'] = to_email
         msg['Subject'] = subject
-        
+
         msg.attach(MIMEText(body, 'html' if is_html else 'plain'))
-        
+
         server = smtplib.SMTP(smtp_settings.smtp_server, smtp_settings.smtp_port)
         if smtp_settings.use_tls:
             server.starttls()
         server.login(smtp_settings.smtp_username, smtp_settings.smtp_password)
-        
+
         text = msg.as_string()
         server.sendmail(smtp_settings.from_email, to_email, text)
         server.quit()
-        
+
         logging.info(f"Email sent successfully to {to_email}")
         return True
-        
+
     except Exception as e:
         logging.error(f"Failed to send email: {str(e)}")
         return False
@@ -140,20 +139,20 @@ def register():
     """User registration"""
     if request.method == 'POST':
         data = request.get_json()
-        
+
         # Validate input
         required_fields = ['username', 'email', 'password', 'first_name', 'last_name']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'success': False, 'error': f'{field} is required'}), 400
-        
+
         # Check if user already exists
         if User.query.filter_by(username=data['username']).first():
             return jsonify({'success': False, 'error': 'Username already exists'}), 400
-        
+
         if User.query.filter_by(email=data['email']).first():
             return jsonify({'success': False, 'error': 'Email already exists'}), 400
-        
+
         # Create new user
         user = User(
             username=data['username'],
@@ -163,40 +162,40 @@ def register():
         )
         user.set_password(data['password'])
         verification_token = user.generate_verification_token()
-        
+
         db.session.add(user)
         db.session.commit()
-        
+
         # Send verification email
         verification_link = f"{request.host_url}verify/{verification_token}"
         subject = "Please verify your email address"
         body = f"""
         Dear {user.first_name} {user.last_name},
-        
+
         Thank you for registering with Business Documents Generator.
-        
+
         Please click the link below to verify your email address:
         {verification_link}
-        
+
         If you didn't create this account, please ignore this email.
-        
+
         Best regards,
         Business Documents Team
         """
-        
+
         email_sent = send_email(user.email, subject, body)
-        
+
         response_message = 'Registration successful! Please check your email for verification.'
         if not email_sent:
             response_message += ' (Email sending failed, please contact administrator)'
             logging.info(f"Verification token for {user.email}: {verification_token}")
-        
+
         return jsonify({
             'success': True, 
             'message': response_message,
             'verification_token': verification_token if not email_sent else None  # Only show in dev if email failed
         })
-    
+
     return render_template('auth/register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -206,27 +205,27 @@ def login():
         data = request.get_json()
         username = data.get('username')
         password = data.get('password')
-        
+
         if not username or not password:
             return jsonify({'success': False, 'error': 'Username and password required'}), 400
-        
+
         user = User.query.filter_by(username=username).first()
-        
+
         if user and user.check_password(password):
             if not user.is_verified:
                 return jsonify({'success': False, 'error': 'Please verify your email first'}), 400
-            
+
             session['user_id'] = user.id
             session['username'] = user.username
             session['is_admin'] = user.is_admin
-            
+
             user.last_login = datetime.utcnow()
             db.session.commit()
-            
+
             return jsonify({'success': True, 'redirect': url_for('dashboard')})
         else:
             return jsonify({'success': False, 'error': 'Invalid username or password'}), 400
-    
+
     return render_template('auth/login.html')
 
 @app.route('/logout')
@@ -247,7 +246,7 @@ def verify_email(token):
         flash('Email verified successfully! You can now log in.', 'success')
     else:
         flash('Invalid verification token.', 'error')
-    
+
     return redirect(url_for('login'))
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
@@ -256,48 +255,48 @@ def forgot_password():
     if request.method == 'POST':
         data = request.get_json()
         email = data.get('email')
-        
+
         if not email:
             return jsonify({'success': False, 'error': 'Email is required'}), 400
-        
+
         user = User.query.filter_by(email=email).first()
         if user:
             reset_token = user.generate_reset_token()
             db.session.commit()
-            
+
             # Send password reset email
             reset_link = f"{request.host_url}reset-password/{reset_token}"
             subject = "Password Reset Request"
             body = f"""
             Dear {user.first_name} {user.last_name},
-            
+
             You have requested to reset your password for Business Documents Generator.
-            
+
             Please click the link below to reset your password:
             {reset_link}
-            
+
             This link will expire in 1 hour.
-            
+
             If you didn't request this reset, please ignore this email.
-            
+
             Best regards,
             Business Documents Team
             """
-            
+
             email_sent = send_email(user.email, subject, body)
-            
+
             if email_sent:
                 response_data = {'success': True, 'message': 'Password reset email sent! Please check your email.'}
             else:
                 response_data = {'success': False, 'error': 'Failed to send password reset email. Please contact administrator.'}
                 logging.error(f"Failed to send reset email to {user.email}")
                 logging.info(f"Reset token for {user.email}: {reset_token}")
-            
+
             return jsonify(response_data)
         else:
             # Don't reveal that user doesn't exist
             return jsonify({'success': True, 'message': 'Password reset email sent!'})
-    
+
     return render_template('auth/forgot_password.html')
 
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
@@ -306,21 +305,21 @@ def reset_password(token):
     if request.method == 'POST':
         data = request.get_json()
         password = data.get('password')
-        
+
         if not password:
             return jsonify({'success': False, 'error': 'Password is required'}), 400
-        
+
         user = User.query.filter_by(reset_token=token).first()
         if user and user.reset_token_expires > datetime.utcnow():
             user.set_password(password)
             user.reset_token = None
             user.reset_token_expires = None
             db.session.commit()
-            
+
             return jsonify({'success': True, 'message': 'Password reset successful!'})
         else:
             return jsonify({'success': False, 'error': 'Invalid or expired reset token'}), 400
-    
+
     return render_template('auth/reset_password.html', token=token)
 
 @app.route('/dashboard')
@@ -328,19 +327,19 @@ def reset_password(token):
 def dashboard():
     """User dashboard"""
     user = User.query.get(session['user_id'])
-    
+
     if user.is_admin:
         return redirect(url_for('admin_dashboard'))
-    
+
     # Get user's PDF codes
     pdf_codes = UserPDFCode.query.filter_by(user_id=user.id).order_by(UserPDFCode.uploaded_at.desc()).all()
-    
+
     # Get user's PDF requests
     pdf_requests = PDFRequest.query.filter_by(user_id=user.id).order_by(PDFRequest.created_at.desc()).all()
-    
+
     # Get unread messages
     unread_messages = Message.query.filter_by(recipient_id=user.id, is_read=False).count()
-    
+
     return render_template('dashboard/user_dashboard.html', 
                          user=user, 
                          pdf_codes=pdf_codes, 
@@ -354,7 +353,7 @@ def admin_dashboard():
     users = User.query.filter_by(is_admin=False).order_by(User.created_at.desc()).all()
     pending_requests = PDFRequest.query.filter_by(status='pending').order_by(PDFRequest.created_at.desc()).all()
     recent_uploads = UserPDFCode.query.order_by(UserPDFCode.uploaded_at.desc()).limit(10).all()
-    
+
     return render_template('dashboard/admin_dashboard.html', 
                          users=users, 
                          pending_requests=pending_requests,
@@ -368,21 +367,21 @@ def request_pdf():
         data = request.get_json()
         title = data.get('title')
         description = data.get('description')
-        
+
         if not title or not description:
             return jsonify({'success': False, 'error': 'Title and description are required'}), 400
-        
+
         pdf_request = PDFRequest(
             user_id=session['user_id'],
             title=title,
             description=description
         )
-        
+
         db.session.add(pdf_request)
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'Request submitted successfully!'})
-        
+
     except Exception as e:
         logging.error(f"Error creating PDF request: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to submit request'}), 500
@@ -394,22 +393,22 @@ def upload_pdf_for_user(user_id):
     try:
         if 'file' not in request.files:
             return jsonify({'success': False, 'error': 'No file provided'}), 400
-        
+
         file = request.files['file']
         description = request.form.get('description', '')
-        
+
         if file.filename == '':
             return jsonify({'success': False, 'error': 'No file selected'}), 400
-        
+
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             # Add timestamp to prevent filename conflicts
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
             filename = timestamp + filename
-            
+
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
-            
+
             user_pdf = UserPDFCode(
                 user_id=user_id,
                 filename=filename,
@@ -418,14 +417,14 @@ def upload_pdf_for_user(user_id):
                 description=description,
                 uploaded_by_admin_id=session['user_id']
             )
-            
+
             db.session.add(user_pdf)
             db.session.commit()
-            
+
             return jsonify({'success': True, 'message': 'File uploaded successfully!'})
         else:
             return jsonify({'success': False, 'error': 'Invalid file type'}), 400
-            
+
     except Exception as e:
         logging.error(f"Error uploading file: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to upload file'}), 500
@@ -438,22 +437,22 @@ def respond_to_request(request_id):
         data = request.get_json()
         status = data.get('status')
         response = data.get('response', '')
-        
+
         if status not in ['approved', 'rejected']:
             return jsonify({'success': False, 'error': 'Invalid status'}), 400
-        
+
         pdf_request = PDFRequest.query.get(request_id)
         if not pdf_request:
             return jsonify({'success': False, 'error': 'Request not found'}), 404
-        
+
         pdf_request.status = status
         pdf_request.admin_response = response
         pdf_request.updated_at = datetime.utcnow()
-        
+
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'Response sent successfully!'})
-        
+
     except Exception as e:
         logging.error(f"Error responding to request: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to respond to request'}), 500
@@ -463,21 +462,21 @@ def respond_to_request(request_id):
 def download_file(file_id):
     """Download user file"""
     user_pdf = UserPDFCode.query.get(file_id)
-    
+
     if not user_pdf:
         flash('File not found.', 'error')
         return redirect(url_for('dashboard'))
-    
+
     # Check if user owns this file or is admin
     if user_pdf.user_id != session['user_id'] and not session.get('is_admin'):
         flash('Access denied.', 'error')
         return redirect(url_for('dashboard'))
-    
+
     # Update download stats
     user_pdf.download_count += 1
     user_pdf.downloaded_at = datetime.utcnow()
     db.session.commit()
-    
+
     return send_from_directory(app.config['UPLOAD_FOLDER'], user_pdf.filename, 
                              as_attachment=True, download_name=user_pdf.original_filename)
 
@@ -486,11 +485,11 @@ def download_file(file_id):
 def messages():
     """Messages page"""
     user = User.query.get(session['user_id'])
-    
+
     # Get all messages for this user
     sent_messages = Message.query.filter_by(sender_id=user.id).order_by(Message.created_at.desc()).all()
     received_messages = Message.query.filter_by(recipient_id=user.id).order_by(Message.created_at.desc()).all()
-    
+
     return render_template('messages/messages.html', 
                          user=user,
                          sent_messages=sent_messages,
@@ -506,20 +505,20 @@ def send_message():
         subject = data.get('subject')
         content = data.get('content')
         parent_message_id = data.get('parent_message_id')
-        
+
         if not recipient_id or not subject or not content:
             return jsonify({'success': False, 'error': 'All fields are required'}), 400
-        
+
         # Validate recipient
         recipient = User.query.get(recipient_id)
         if not recipient:
             return jsonify({'success': False, 'error': 'Recipient not found'}), 404
-        
+
         # Check if user can message this recipient (users can only message admins)
         sender = User.query.get(session['user_id'])
         if not sender.is_admin and not recipient.is_admin:
             return jsonify({'success': False, 'error': 'Users can only message administrators'}), 403
-        
+
         message = Message(
             sender_id=session['user_id'],
             recipient_id=recipient_id,
@@ -527,12 +526,12 @@ def send_message():
             content=content,
             parent_message_id=parent_message_id
         )
-        
+
         db.session.add(message)
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'Message sent successfully!'})
-        
+
     except Exception as e:
         logging.error(f"Error sending message: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to send message'}), 500
@@ -543,15 +542,15 @@ def mark_message_read(message_id):
     """Mark message as read"""
     try:
         message = Message.query.get(message_id)
-        
+
         if not message or message.recipient_id != session['user_id']:
             return jsonify({'success': False, 'error': 'Message not found'}), 404
-        
+
         message.is_read = True
         db.session.commit()
-        
+
         return jsonify({'success': True})
-        
+
     except Exception as e:
         logging.error(f"Error marking message as read: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to mark message as read'}), 500
@@ -562,14 +561,14 @@ def get_message_content(message_id):
     """Get message content"""
     try:
         message = Message.query.get(message_id)
-        
+
         if not message:
             return jsonify({'success': False, 'error': 'Message not found'}), 404
-        
+
         # Check if user can view this message
         if message.recipient_id != session['user_id'] and message.sender_id != session['user_id']:
             return jsonify({'success': False, 'error': 'Access denied'}), 403
-        
+
         return jsonify({
             'success': True,
             'content': message.content,
@@ -577,7 +576,7 @@ def get_message_content(message_id):
             'sender': f"{message.sender.first_name} {message.sender.last_name}",
             'created_at': message.created_at.strftime('%Y-%m-%d %H:%M')
         })
-        
+
     except Exception as e:
         logging.error(f"Error getting message content: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to get message content'}), 500
@@ -588,7 +587,7 @@ def get_admins():
     """Get list of admin users for messaging"""
     admins = User.query.filter_by(is_admin=True).all()
     admin_list = [{'id': admin.id, 'name': f"{admin.first_name} {admin.last_name}", 'username': admin.username} for admin in admins]
-    
+
     return jsonify({'success': True, 'admins': admin_list})
 
 # Original routes for document generation
@@ -611,21 +610,21 @@ def generate_code():
                 data = request.form.to_dict()
         except Exception:
             data = {}
-            
+
         user_id = data.get('user_id')
         document_data = data.get('document_data')
-        
+
         if not user_id:
             return jsonify({'success': False, 'error': 'User ID is required'}), 400
-        
+
         # Verify user exists
         user = User.query.get(user_id)
         if not user:
             return jsonify({'success': False, 'error': 'User not found'}), 404
-        
+
         # Generate a random 8-character code
         code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
-        
+
         # Store the code in database with expiration (24 hours)
         expiry = datetime.utcnow() + timedelta(hours=24)
         download_code = DownloadCode(
@@ -636,7 +635,7 @@ def generate_code():
         )
         db.session.add(download_code)
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'code': code,
@@ -653,15 +652,15 @@ def generate_bulk_codes():
     try:
         data = request.get_json()
         quantity = data.get('quantity', 1)
-        
+
         # Validate quantity
         if quantity < 1 or quantity > 100:
             return jsonify({'success': False, 'error': 'Quantity must be between 1 and 100'}), 400
-        
+
         # Generate codes
         codes = []
         expiry = datetime.utcnow() + timedelta(days=365)  # 1 year expiry
-        
+
         for _ in range(quantity):
             code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
             download_code = DownloadCode(code=code, expires_at=expiry)
@@ -670,9 +669,9 @@ def generate_bulk_codes():
                 'code': code,
                 'expires_at': expiry.isoformat()
             })
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'codes': codes,
@@ -688,37 +687,37 @@ def verify_code():
     try:
         data = request.get_json()
         code = data.get('code', '').upper()
-        
+
         if not code:
             return jsonify({'success': False, 'error': 'Code is required'}), 400
-        
+
         # Find the code in database
         download_code = DownloadCode.query.filter_by(code=code, used=False).first()
-        
+
         if not download_code:
             return jsonify({'success': False, 'error': 'Invalid or already used code'}), 400
-        
+
         # Check if code has expired
         if download_code.expires_at < datetime.utcnow():
             return jsonify({'success': False, 'error': 'Code has expired'}), 400
-        
+
         # Prepare response data
         response_data = {
             'success': True,
             'message': 'Code verified successfully',
             'business_settings': {}
         }
-        
+
         # Get user's business settings if user is associated with code
         if download_code.user_id:
             user = download_code.user
             user_settings = UserBusinessSettings.query.filter_by(user_id=user.id).first()
-            
+
             response_data['user_info'] = {
                 'name': f"{user.first_name} {user.last_name}",
                 'email': user.email
             }
-            
+
             # Add business settings if available
             if user_settings:
                 response_data['business_settings'] = {
@@ -769,18 +768,18 @@ def verify_code():
                     'taxRate': 0,
                     'currency': 'USD'
                 }
-        
+
         # Add document data if available
         if download_code.document_data:
             response_data['document_data'] = json.loads(download_code.document_data)
-        
+
         # Mark code as used
         download_code.used = True
         download_code.used_at = datetime.utcnow()
         db.session.commit()
-        
+
         return jsonify(response_data)
-        
+
     except Exception as e:
         logging.error(f"Error verifying code: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to verify code'}), 500
@@ -791,13 +790,13 @@ def save_settings():
     """Save business settings for current user"""
     try:
         data = request.get_json()
-        
+
         # Get or create user settings record
         user_settings = UserBusinessSettings.query.filter_by(user_id=session['user_id']).first()
         if not user_settings:
             user_settings = UserBusinessSettings(user_id=session['user_id'])
             db.session.add(user_settings)
-        
+
         # Update settings with proper handling of empty values
         user_settings.business_name = data.get('businessName', '').strip()
         user_settings.business_address = data.get('businessAddress', '').strip()
@@ -807,13 +806,13 @@ def save_settings():
         user_settings.signature_url = data.get('signatureUrl', '').strip()
         user_settings.tax_rate = float(data.get('taxRate', 0))
         user_settings.currency = data.get('currency', 'USD').strip()
-        
+
         db.session.commit()
-        
+
         logging.info(f"Settings saved for user {session['user_id']}: {user_settings.business_name}")
-        
+
         return jsonify({'success': True, 'message': 'Settings saved successfully'})
-        
+
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error saving settings: {str(e)}")
@@ -839,7 +838,7 @@ def get_public_settings():
                     'currency': settings.currency or 'USD'
                 }
             })
-        
+
         # Default empty settings
         return jsonify({
             'success': True,
@@ -854,7 +853,7 @@ def get_public_settings():
                 'currency': 'USD'
             }
         })
-        
+
     except Exception as e:
         logging.error(f"Error getting public settings: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to get settings'}), 500
@@ -880,7 +879,7 @@ def get_settings():
                         'currency': user_settings.currency or 'USD'
                     }
                 })
-        
+
         # Fallback to global settings or defaults
         settings = BusinessSettings.query.first()
         if settings:
@@ -897,7 +896,7 @@ def get_settings():
                     'currency': settings.currency or 'USD'
                 }
             })
-        
+
         # Default empty settings
         return jsonify({
             'success': True,
@@ -912,7 +911,7 @@ def get_settings():
                 'currency': 'USD'
             }
         })
-        
+
     except Exception as e:
         logging.error(f"Error getting settings: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to get settings'}), 500
@@ -924,7 +923,7 @@ def export_settings():
         settings = BusinessSettings.query.first()
         if not settings:
             return jsonify({'success': False, 'error': 'No settings found'}), 404
-        
+
         settings_data = {
             'businessName': settings.business_name,
             'businessAddress': settings.business_address,
@@ -936,13 +935,13 @@ def export_settings():
             'currency': settings.currency,
             'exportDate': datetime.utcnow().isoformat()
         }
-        
+
         return jsonify({
             'success': True,
             'data': settings_data,
             'filename': f'business_settings_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
         })
-        
+
     except Exception as e:
         logging.error(f"Error exporting settings: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to export settings'}), 500
@@ -954,13 +953,13 @@ def import_settings():
     try:
         data = request.get_json()
         settings_data = data.get('settings', {})
-        
+
         # Get or create user settings record
         user_settings = UserBusinessSettings.query.filter_by(user_id=session['user_id']).first()
         if not user_settings:
             user_settings = UserBusinessSettings(user_id=session['user_id'])
             db.session.add(user_settings)
-        
+
         # Update settings with imported data
         user_settings.business_name = settings_data.get('businessName', '')
         user_settings.business_address = settings_data.get('businessAddress', '')
@@ -970,11 +969,11 @@ def import_settings():
         user_settings.signature_url = settings_data.get('signatureUrl', '')
         user_settings.tax_rate = float(settings_data.get('taxRate', 0))
         user_settings.currency = settings_data.get('currency', 'USD')
-        
+
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'Settings imported successfully'})
-        
+
     except Exception as e:
         logging.error(f"Error importing settings: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to import settings'}), 500
@@ -986,11 +985,11 @@ def get_all_users():
     try:
         users = User.query.filter_by(is_admin=False).all()
         users_data = []
-        
+
         for user in users:
             user_settings = UserBusinessSettings.query.filter_by(user_id=user.id).first()
             clients = ClientSettings.query.filter_by(user_id=user.id).all()
-            
+
             users_data.append({
                 'id': user.id,
                 'username': user.username,
@@ -1018,9 +1017,9 @@ def get_all_users():
                     'is_active': client.is_active
                 } for client in clients]
             })
-        
+
         return jsonify({'success': True, 'users': users_data})
-        
+
     except Exception as e:
         logging.error(f"Error getting users: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to get users'}), 500
@@ -1032,34 +1031,34 @@ def generate_code_for_user():
     try:
         data = request.get_json()
         user_id = data.get('user_id')
-        
+
         if not user_id:
             return jsonify({'success': False, 'error': 'User ID is required'}), 400
-        
+
         user = User.query.get(user_id)
         if not user:
             return jsonify({'success': False, 'error': 'User not found'}), 404
-        
+
         # Generate code
         code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
         expiry = datetime.utcnow() + timedelta(hours=24)
-        
+
         download_code = DownloadCode(
             code=code,
             user_id=user_id,
             expires_at=expiry
         )
-        
+
         db.session.add(download_code)
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'code': code,
             'user_name': f"{user.first_name} {user.last_name}",
             'expires_at': expiry.isoformat()
         })
-        
+
     except Exception as e:
         logging.error(f"Error generating code for user: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to generate code'}), 500
@@ -1071,7 +1070,7 @@ def save_client():
     try:
         data = request.get_json()
         client_id = data.get('client_id')
-        
+
         if client_id:
             # Update existing client
             client = ClientSettings.query.filter_by(id=client_id, user_id=session['user_id']).first()
@@ -1081,18 +1080,18 @@ def save_client():
             # Create new client
             client = ClientSettings(user_id=session['user_id'])
             db.session.add(client)
-        
+
         # Update client data
         client.client_name = data.get('client_name', '')
         client.client_address = data.get('client_address', '')
         client.client_email = data.get('client_email', '')
         client.client_phone = data.get('client_phone', '')
         client.is_active = data.get('is_active', True)
-        
+
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'Client saved successfully', 'client_id': client.id})
-        
+
     except Exception as e:
         logging.error(f"Error saving client: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to save client'}), 500
@@ -1110,9 +1109,9 @@ def get_clients():
             'email': client.client_email,
             'phone': client.client_phone
         } for client in clients]
-        
+
         return jsonify({'success': True, 'clients': clients_data})
-        
+
     except Exception as e:
         logging.error(f"Error getting clients: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to get clients'}), 500
@@ -1125,36 +1124,36 @@ def toggle_user_verification(user_id):
         user = User.query.get(user_id)
         if not user:
             return jsonify({'success': False, 'error': 'User not found'}), 404
-        
+
         if user.is_admin:
             return jsonify({'success': False, 'error': 'Cannot modify admin user verification'}), 400
-        
+
         user.is_verified = not user.is_verified
         db.session.commit()
-        
+
         status = 'verified' if user.is_verified else 'unverified'
-        
+
         # Send email notification
         subject = f"Account Verification {'Approved' if user.is_verified else 'Revoked'}"
         body = f"""
         Dear {user.first_name} {user.last_name},
-        
+
         Your account verification status has been {'approved' if user.is_verified else 'revoked'} by an administrator.
-        
+
         Status: {status.capitalize()}
-        
+
         Best regards,
         Business Documents Team
         """
-        
+
         send_email(user.email, subject, body)
-        
+
         return jsonify({
             'success': True, 
             'message': f'User {status} successfully',
             'is_verified': user.is_verified
         })
-        
+
     except Exception as e:
         logging.error(f"Error toggling user verification: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to update user verification'}), 500
@@ -1195,14 +1194,14 @@ def handle_smtp_settings():
         except Exception as e:
             logging.error(f"Error getting SMTP settings: {str(e)}")
             return jsonify({'success': False, 'error': 'Failed to get SMTP settings'}), 500
-    
+
     elif request.method == 'POST':
         try:
             data = request.get_json()
-            
+
             # Deactivate old settings
             SMTPSettings.query.update({'is_active': False})
-            
+
             # Create new settings
             smtp_settings = SMTPSettings(
                 smtp_server=data.get('smtp_server'),
@@ -1214,12 +1213,12 @@ def handle_smtp_settings():
                 from_name=data.get('from_name', ''),
                 is_active=True
             )
-            
+
             db.session.add(smtp_settings)
             db.session.commit()
-            
+
             return jsonify({'success': True, 'message': 'SMTP settings saved successfully'})
-            
+
         except Exception as e:
             logging.error(f"Error saving SMTP settings: {str(e)}")
             return jsonify({'success': False, 'error': 'Failed to save SMTP settings'}), 500
@@ -1231,27 +1230,27 @@ def test_smtp():
     try:
         data = request.get_json()
         test_email = data.get('test_email')
-        
+
         if not test_email:
             return jsonify({'success': False, 'error': 'Test email address is required'}), 400
-        
+
         subject = "SMTP Test Email"
         body = """
         This is a test email to verify your SMTP configuration.
-        
+
         If you received this email, your SMTP settings are working correctly.
-        
+
         Best regards,
         Business Documents System
         """
-        
+
         success = send_email(test_email, subject, body)
-        
+
         if success:
             return jsonify({'success': True, 'message': 'Test email sent successfully'})
         else:
             return jsonify({'success': False, 'error': 'Failed to send test email. Please check your SMTP settings.'})
-            
+
     except Exception as e:
         logging.error(f"Error testing SMTP: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to test SMTP settings'}), 500
@@ -1262,33 +1261,33 @@ def edit_user(user_id):
     """Edit user details"""
     try:
         data = request.get_json()
-        
+
         user = User.query.get(user_id)
         if not user:
             return jsonify({'success': False, 'error': 'User not found'}), 404
-        
+
         if user.is_admin:
             return jsonify({'success': False, 'error': 'Cannot edit admin users'}), 400
-        
+
         # Check if username or email already exists (excluding current user)
         existing_username = User.query.filter(User.username == data.get('username'), User.id != user_id).first()
         if existing_username:
             return jsonify({'success': False, 'error': 'Username already exists'}), 400
-        
+
         existing_email = User.query.filter(User.email == data.get('email'), User.id != user_id).first()
         if existing_email:
             return jsonify({'success': False, 'error': 'Email already exists'}), 400
-        
+
         # Update user details
         user.username = data.get('username', user.username)
         user.email = data.get('email', user.email)
         user.first_name = data.get('first_name', user.first_name)
         user.last_name = data.get('last_name', user.last_name)
-        
+
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'User updated successfully'})
-        
+
     except Exception as e:
         logging.error(f"Error editing user: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to update user'}), 500
@@ -1301,36 +1300,40 @@ def delete_user(user_id):
         user = User.query.get(user_id)
         if not user:
             return jsonify({'success': False, 'error': 'User not found'}), 404
-        
+
         if user.is_admin:
             return jsonify({'success': False, 'error': 'Cannot delete admin users'}), 400
-        
+
         user_name = f"{user.first_name} {user.last_name}"
-        
+
         # Manually delete related records that might cause foreign key issues
         # Delete messages where user is sender or recipient
         Message.query.filter_by(sender_id=user_id).delete()
         Message.query.filter_by(recipient_id=user_id).delete()
-        
+
         # Delete user business settings
         UserBusinessSettings.query.filter_by(user_id=user_id).delete()
-        
+
         # Delete client settings
         ClientSettings.query.filter_by(user_id=user_id).delete()
-        
+
         # Delete download codes
         DownloadCode.query.filter_by(user_id=user_id).delete()
-        
+
         # Delete user (remaining cascades will handle PDF codes and requests)
         db.session.delete(user)
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': f'User {user_name} deleted successfully'})
-        
+
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error deleting user: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to delete user'}), 500
+
+@app.route('/offline.html')
+def offline():
+    return render_template('offline.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
