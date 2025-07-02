@@ -675,20 +675,17 @@
         }
 
         // Handle file upload
-        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
+        function uploadFile() {
+            const form = document.getElementById('uploadForm');
+            const formData = new FormData(form);
             const userId = document.getElementById('uploadUserId').value;
 
-            try {
-                const response = await fetch(`/api/upload-pdf/${userId}`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
+            fetch(`/api/upload-pdf/${userId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
                 if (result.success) {
                     showAlert(result.message, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
@@ -696,103 +693,429 @@
                 } else {
                     showAlert(result.error, 'error');
                 }
-            } catch (error) {
+            })
+            .catch(error => {
                 showAlert('Upload failed: ' + error.message, 'error');
-            }
-        });
+            });
+        }
 
         // Respond to request
         function respondToRequest(requestId, status) {
-            document.getElementById('responseRequestId').value = requestId;
-            document.getElementById('responseStatus').value = status;
-            document.getElementById('responseStatusText').value = status.charAt(0).toUpperCase() + status.slice(1);
-            new bootstrap.Modal(document.getElementById('responseModal')).show();
-        }
+            const response = prompt(`Enter your ${status} response:`);
+            if (response === null) return;
 
-        // Handle response submission
-        document.getElementById('responseForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const requestId = document.getElementById('responseRequestId').value;
-            const status = document.getElementById('responseStatus').value;
-            const response = document.getElementById('responseText').value;
-
-            try {
-                const result = await fetch(`/api/respond-request/${requestId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ status, response })
-                });
-
-                const data = await result.json();
-
+            fetch(`/api/respond-request/${requestId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status, response })
+            })
+            .then(response => response.json())
+            .then(data => {
                 if (data.success) {
                     showAlert(data.message, 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('responseModal')).hide();
                     setTimeout(() => location.reload(), 1000);
                 } else {
                     showAlert(data.error, 'error');
                 }
-            } catch (error) {
+            })
+            .catch(error => {
                 showAlert('Response failed: ' + error.message, 'error');
-            }
-        });
+            });
+        }
 
         // View full request
         function viewFullRequest(requestId, title, description, userName) {
-            document.getElementById('viewRequestUser').value = userName;
-            document.getElementById('viewRequestTitle').value = title;
-            document.getElementById('viewRequestDescription').value = description;
-            new bootstrap.Modal(document.getElementById('viewRequestModal')).show();
+            alert(`Request from: ${userName}\nTitle: ${title}\nDescription: ${description}`);
         }
 
         // Message user
         function messageUser(userId, userName) {
             document.getElementById('messageUserId').value = userId;
             document.getElementById('messageUserName').innerText = userName;
-            document.getElementById('messageSubject').value = '';
-            document.getElementById('messageContent').value = '';
+            document.getElementById('messageText').value = '';
             new bootstrap.Modal(document.getElementById('messageModal')).show();
         }
 
-        // Handle message sending
-        document.getElementById('messageForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        // Send message
+        function sendMessage() {
+            const userId = document.getElementById('messageUserId').value;
+            const message = document.getElementById('messageText').value;
 
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData);
+            if (!message.trim()) {
+                showAlert('Message cannot be empty', 'error');
+                return;
+            }
 
-            try {
-                const response = await fetch('/api/send-message', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-
+            fetch(`/api/admin/send-message/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message })
+            })
+            .then(response => response.json())
+            .then(result => {
                 if (result.success) {
                     showAlert(result.message, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('messageModal')).hide();
-                    this.reset();
                 } else {
                     showAlert(result.error, 'error');
                 }
-            } catch (error) {
+            })
+            .catch(error => {
                 showAlert('Message failed: ' + error.message, 'error');
+            });
+        }
+
+        // Edit user
+        function editUser(userId, username, email, firstName, lastName) {
+            document.getElementById('editUserId').value = userId;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editFirstName').value = firstName;
+            document.getElementById('editLastName').value = lastName;
+            document.getElementById('editPassword').value = '';
+            new bootstrap.Modal(document.getElementById('editUserModal')).show();
+        }
+
+        // Save user edit
+        function saveUserEdit() {
+            const userId = document.getElementById('editUserId').value;
+            const userData = {
+                username: document.getElementById('editUsername').value,
+                email: document.getElementById('editEmail').value,
+                first_name: document.getElementById('editFirstName').value,
+                last_name: document.getElementById('editLastName').value
+            };
+
+            const password = document.getElementById('editPassword').value;
+            if (password) {
+                userData.password = password;
             }
-        });
+
+            fetch(`/api/admin/edit-user/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Update failed: ' + error.message, 'error');
+            });
+        }
 
         // Toggle user verification
         function toggleVerification(userId, userName, newStatus) {
             if (confirm(`Are you sure you want to ${newStatus ? 'verify' : 'unverify'} ${userName}?`)) {
                 fetch(`/api/admin/toggle-user-verification/${userId}`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ verify: newStatus })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        showAlert(data.message, 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showAlert(data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    showAlert('Verification toggle failed: ' + error.message, 'error');
+                });
+            }
+        }
+
+        // Delete user
+        function deleteUser(userId, userName) {
+            if (confirm(`Are you sure you want to DELETE ${userName}? This action cannot be undone!`)) {
+                fetch(`/api/admin/delete-user/${userId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert(data.message, 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showAlert(data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    showAlert('Delete failed: ' + error.message, 'error');
+                });
+            }
+        }
+
+        // SMTP Settings functions
+        document.getElementById('smtpForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            fetch('/api/admin/smtp-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('SMTP settings save failed: ' + error.message, 'error');
+            });
+        });
+
+        // Load SMTP settings
+        document.getElementById('loadSmtpBtn').addEventListener('click', function() {
+            fetch('/api/admin/smtp-settings')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const settings = data.settings;
+                    document.getElementById('smtpServer').value = settings.smtp_server || '';
+                    document.getElementById('smtpPort').value = settings.smtp_port || 587;
+                    document.getElementById('smtpUsername').value = settings.smtp_username || '';
+                    document.getElementById('smtpPassword').value = '';
+                    document.getElementById('fromEmail').value = settings.from_email || '';
+                    document.getElementById('fromName').value = settings.from_name || '';
+                    document.getElementById('useTls').checked = settings.use_tls !== false;
+                    showAlert('SMTP settings loaded', 'success');
+                } else {
+                    showAlert('Failed to load SMTP settings', 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Load SMTP settings failed: ' + error.message, 'error');
+            });
+        });
+
+        // Test SMTP
+        document.getElementById('testSmtpBtn').addEventListener('click', function() {
+            new bootstrap.Modal(document.getElementById('smtpTestModal')).show();
+        });
+
+        document.getElementById('smtpTestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const testEmail = document.getElementById('testEmail').value;
+            
+            fetch('/api/admin/test-smtp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ test_email: testEmail })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('smtpTestModal')).hide();
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('SMTP test failed: ' + error.message, 'error');
+            });
+        });
+
+        // Activity logs functions
+        function loadActivityLogs(page = 1) {
+            fetch(`/api/admin/activity-logs?page=${page}&per_page=20`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayActivityLogs(data.logs);
+                    displayPagination(data.current_page, data.pages);
+                } else {
+                    document.getElementById('activity-logs-container').innerHTML = '<div class="alert alert-danger">Failed to load activity logs</div>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('activity-logs-container').innerHTML = '<div class="alert alert-danger">Error loading activity logs: ' + error.message + '</div>';
+            });
+        }
+
+        function displayActivityLogs(logs) {
+            let html = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>User</th><th>Activity</th><th>Description</th><th>IP Address</th><th>Date</th></tr></thead><tbody>';
+            
+            logs.forEach(log => {
+                html += `<tr>
+                    <td>${log.user} (${log.username})</td>
+                    <td><span class="badge bg-primary">${log.activity_type}</span></td>
+                    <td>${log.description}</td>
+                    <td>${log.ip_address || 'N/A'}</td>
+                    <td>${log.created_at}</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table></div>';
+            document.getElementById('activity-logs-container').innerHTML = html;
+        }
+
+        function displayPagination(currentPage, totalPages) {
+            if (totalPages <= 1) {
+                document.getElementById('activity-pagination').style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            for (let i = 1; i <= totalPages; i++) {
+                const active = i === currentPage ? 'active' : '';
+                html += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="loadActivityLogs(${i})">${i}</a></li>`;
+            }
+            
+            document.getElementById('activity-pagination').innerHTML = `<ul class="pagination justify-content-center">${html}</ul>`;
+            document.getElementById('activity-pagination').style.display = 'block';
+        }
+
+        // Generated documents functions
+        function loadGeneratedDocuments() {
+            fetch('/api/admin/generated-documents')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayGeneratedDocuments(data.documents);
+                } else {
+                    document.getElementById('documents-container').innerHTML = '<div class="alert alert-danger">Failed to load documents</div>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('documents-container').innerHTML = '<div class="alert alert-danger">Error loading documents: ' + error.message + '</div>';
+            });
+        }
+
+        function displayGeneratedDocuments(documents) {
+            if (documents.length === 0) {
+                document.getElementById('documents-container').innerHTML = '<div class="text-center py-4"><i class="fas fa-file-pdf fa-3x text-muted mb-3"></i><h5>No documents generated yet</h5></div>';
+                return;
+            }
+
+            let html = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>User</th><th>Document Type</th><th>Title</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+            
+            documents.forEach(doc => {
+                html += `<tr>
+                    <td>${doc.user} (${doc.username})</td>
+                    <td><span class="badge bg-info">${doc.document_type}</span></td>
+                    <td>${doc.document_title}</td>
+                    <td>${doc.created_at}</td>
+                    <td><a href="/api/admin/download-generated-document/${doc.id}" class="btn btn-sm btn-primary"><i class="fas fa-download"></i> Download</a></td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table></div>';
+            document.getElementById('documents-container').innerHTML = html;
+        }
+
+        // Backup functions
+        document.getElementById('createBackupBtn').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Backup...';
+            
+            fetch('/api/admin/backup-database', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showAlert('Backup created successfully: ' + result.backup_path, 'success');
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Backup failed: ' + error.message, 'error');
+            })
+            .finally(() => {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-download"></i> Create Backup';
+            });
+        });
+
+        document.getElementById('backupSettingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const backupDirectory = document.getElementById('backupDirectory').value;
+            
+            fetch('/api/admin/backup-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ backup_directory: backupDirectory })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Backup settings save failed: ' + error.message, 'error');
+            });
+        });
+
+        // Load backup settings on page load
+        function loadBackupSettings() {
+            fetch('/api/admin/backup-settings')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('backupDirectory').value = data.backup_directory;
+                }
+            })
+            .catch(error => {
+                console.error('Failed to load backup settings:', error);
+            });
+        }
+
+        // Tab event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load activity logs when activity tab is shown
+            document.getElementById('activity-tab').addEventListener('shown.bs.tab', function() {
+                loadActivityLogs();
+            });
+
+            // Load documents when documents tab is shown
+            document.getElementById('documents-tab').addEventListener('shown.bs.tab', function() {
+                loadGeneratedDocuments();
+            });
+
+            // Load backup settings when backup tab is shown
+            document.getElementById('backup-tab').addEventListener('shown.bs.tab', function() {
+                loadBackupSettings();
+            });
+
+            // Load SMTP settings when settings tab is shown
+            document.getElementById('settings-tab').addEventListener('shown.bs.tab', function() {
+                document.getElementById('loadSmtpBtn').click();
+            });
+        });

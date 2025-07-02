@@ -1317,10 +1317,10 @@ def send_admin_message(user_id):
 
         # Create new message
         message = Message(
-            user_id=user_id,
-            title='Message from Admin',
-            content=message_text,
-            sender_type='admin'
+            sender_id=session['user_id'],
+            recipient_id=user_id,
+            subject='Message from Admin',
+            content=message_text
         )
 
         db.session.add(message)
