@@ -149,6 +149,18 @@ def test():
     """Simple test route"""
     return "<h1>Flask App is Working!</h1><p>If you can see this, the app is running correctly.</p>"
 
+@app.route('/debug-admin')
+def debug_admin():
+    """Debug route to check admin user"""
+    try:
+        admin = User.query.filter_by(is_admin=True).first()
+        if admin:
+            return f"<h1>Admin User Found</h1><p>Username: {admin.username}</p><p>Email: {admin.email}</p><p>Is Verified: {admin.is_verified}</p>"
+        else:
+            return "<h1>No Admin User Found</h1>"
+    except Exception as e:
+        return f"<h1>Database Error</h1><p>{str(e)}</p>"
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """User registration"""
@@ -195,29 +207,37 @@ def register():
 def login():
     """User login"""
     if request.method == 'POST':
-        data = request.get_json()
-        username = data.get('username')
-        password = data.get('password')
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'success': False, 'error': 'No data provided'}), 400
+            
+            username = data.get('username', '').strip()
+            password = data.get('password', '')
 
-        if not username or not password:
-            return jsonify({'success': False, 'error': 'Username and password required'}), 400
+            if not username or not password:
+                return jsonify({'success': False, 'error': 'Username and password required'}), 400
 
-        user = User.query.filter_by(username=username).first()
+            user = User.query.filter_by(username=username).first()
 
-        if user and user.check_password(password):
-            session['user_id'] = user.id
-            session['username'] = user.username
-            session['is_admin'] = user.is_admin
+            if user and user.check_password(password):
+                session['user_id'] = user.id
+                session['username'] = user.username
+                session['is_admin'] = user.is_admin
 
-            user.last_login = datetime.utcnow()
-            db.session.commit()
+                user.last_login = datetime.utcnow()
+                db.session.commit()
 
-            # Log login activity
-            log_activity(user.id, 'login', f"User {user.username} logged in", request.remote_addr, request.user_agent.string)
+                # Log login activity
+                log_activity(user.id, 'login', f"User {user.username} logged in", request.remote_addr, request.user_agent.string)
 
-            return jsonify({'success': True, 'redirect': url_for('dashboard')})
-        else:
-            return jsonify({'success': False, 'error': 'Invalid username or password'}), 400
+                return jsonify({'success': True, 'redirect': url_for('dashboard')})
+            else:
+                return jsonify({'success': False, 'error': 'Invalid username or password'}), 400
+                
+        except Exception as e:
+            logging.error(f"Login error: {str(e)}")
+            return jsonify({'success': False, 'error': 'Login failed. Please try again.'}), 500
 
     return render_template('auth/login.html')
 
