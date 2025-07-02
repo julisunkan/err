@@ -29,4 +29,27 @@ window.fetch = function(...args) {
         });
 };
 
+// Initialize the app
+    window.DocumentApp = {
+        settings: {},
+        init: function() {
+            console.log('Document loaded, initializing...');
+            this.loadSettings();
+            this.checkUserSession();
+        },
+
+        checkUserSession: function() {
+            // Check if user is logged in and store username
+            fetch('/api/get-current-user')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.username) {
+                        sessionStorage.setItem('current_username', data.username);
+                    }
+                })
+                .catch(error => {
+                    console.log('No user session found');
+                });
+        },
+
 console.log('App.js loaded successfully with offline support');

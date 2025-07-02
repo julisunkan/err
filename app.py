@@ -39,7 +39,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Import models and initialize database
-from models import db, User, UserPDFCode, PDFRequest, Message, DownloadCode, BusinessSettings, UserBusinessSettings, ClientSettings, SMTPSettings
+from models import db, User, UserPDFCode, PDFRequest, Message, DownloadCode, BusinessSettings, UserBusinessSettings, ClientSettings, SMTPSettings, ActivityLog, GeneratedDocument, SystemSettings
 
 # Initialize the app with the extension
 db.init_app(app)
@@ -88,6 +88,21 @@ def admin_required(f):
             return redirect(url_for('dashboard'))
         return f(*args, **kwargs)
     return decorated_function
+
+def log_activity(user_id, activity_type, description, ip_address=None, user_agent=None):
+    """Log user activity"""
+    try:
+        activity = ActivityLog(
+            user_id=user_id,
+            activity_type=activity_type,
+            description=description,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        db.session.add(activity)
+        db.session.commit()
+    except Exception as e:
+        logging.error(f"Failed to log activity: {str(e)}")
 
 def send_email(to_email, subject, body, is_html=False):
     """Send email using SMTP settings"""
@@ -158,42 +173,20 @@ def register():
             username=data['username'],
             email=data['email'],
             first_name=data['first_name'],
-            last_name=data['last_name']
+            last_name=data['last_name'],
+            is_verified=True  # Auto-verify users
         )
         user.set_password(data['password'])
-        verification_token = user.generate_verification_token()
 
         db.session.add(user)
         db.session.commit()
 
-        # Send verification email
-        verification_link = f"{request.host_url}verify/{verification_token}"
-        subject = "Please verify your email address"
-        body = f"""
-        Dear {user.first_name} {user.last_name},
-
-        Thank you for registering with Business Documents Generator.
-
-        Please click the link below to verify your email address:
-        {verification_link}
-
-        If you didn't create this account, please ignore this email.
-
-        Best regards,
-        Business Documents Team
-        """
-
-        email_sent = send_email(user.email, subject, body)
-
-        response_message = 'Registration successful! Please check your email for verification.'
-        if not email_sent:
-            response_message += ' (Email sending failed, please contact administrator)'
-            logging.info(f"Verification token for {user.email}: {verification_token}")
+        # Log registration activity
+        log_activity(user.id, 'registration', f"User {user.username} registered successfully", request.remote_addr, request.user_agent.string)
 
         return jsonify({
             'success': True, 
-            'message': response_message,
-            'verification_token': verification_token if not email_sent else None  # Only show in dev if email failed
+            'message': 'Registration successful! You can now log in.'
         })
 
     return render_template('auth/register.html')
@@ -212,15 +205,15 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and user.check_password(password):
-            if not user.is_verified:
-                return jsonify({'success': False, 'error': 'Please verify your email first'}), 400
-
             session['user_id'] = user.id
             session['username'] = user.username
             session['is_admin'] = user.is_admin
 
             user.last_login = datetime.utcnow()
             db.session.commit()
+
+            # Log login activity
+            log_activity(user.id, 'login', f"User {user.username} logged in", request.remote_addr, request.user_agent.string)
 
             return jsonify({'success': True, 'redirect': url_for('dashboard')})
         else:
@@ -231,96 +224,58 @@ def login():
 @app.route('/logout')
 def logout():
     """User logout"""
+    user_id = session.get('user_id')
+    username = session.get('username')
+    
+    if user_id:
+        log_activity(user_id, 'logout', f"User {username} logged out", request.remote_addr, request.user_agent.string)
+    
     session.clear()
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
-@app.route('/verify/<token>')
-def verify_email(token):
-    """Email verification"""
-    user = User.query.filter_by(verification_token=token).first()
-    if user:
-        user.is_verified = True
-        user.verification_token = None
+# Email verification and forgot password routes removed
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    """User profile management"""
+    user = User.query.get(session['user_id'])
+    
+    if request.method == 'POST':
+        data = request.get_json()
+        
+        # Check if username or email already exists (excluding current user)
+        existing_username = User.query.filter(User.username == data.get('username'), User.id != user.id).first()
+        if existing_username:
+            return jsonify({'success': False, 'error': 'Username already exists'}), 400
+
+        existing_email = User.query.filter(User.email == data.get('email'), User.id != user.id).first()
+        if existing_email:
+            return jsonify({'success': False, 'error': 'Email already exists'}), 400
+
+        # Update user details
+        old_username = user.username
+        user.username = data.get('username', user.username)
+        user.email = data.get('email', user.email)
+        user.first_name = data.get('first_name', user.first_name)
+        user.last_name = data.get('last_name', user.last_name)
+
+        # Update password if provided
+        if data.get('password'):
+            user.set_password(data['password'])
+
         db.session.commit()
-        flash('Email verified successfully! You can now log in.', 'success')
-    else:
-        flash('Invalid verification token.', 'error')
 
-    return redirect(url_for('login'))
+        # Log profile edit activity
+        log_activity(user.id, 'profile_edit', f"User {old_username} updated profile details", request.remote_addr, request.user_agent.string)
 
-@app.route('/forgot-password', methods=['GET', 'POST'])
-def forgot_password():
-    """Forgot password"""
-    if request.method == 'POST':
-        data = request.get_json()
-        email = data.get('email')
+        # Update session if username changed
+        session['username'] = user.username
 
-        if not email:
-            return jsonify({'success': False, 'error': 'Email is required'}), 400
+        return jsonify({'success': True, 'message': 'Profile updated successfully'})
 
-        user = User.query.filter_by(email=email).first()
-        if user:
-            reset_token = user.generate_reset_token()
-            db.session.commit()
-
-            # Send password reset email
-            reset_link = f"{request.host_url}reset-password/{reset_token}"
-            subject = "Password Reset Request"
-            body = f"""
-            Dear {user.first_name} {user.last_name},
-
-            You have requested to reset your password for Business Documents Generator.
-
-            Please click the link below to reset your password:
-            {reset_link}
-
-            This link will expire in 1 hour.
-
-            If you didn't request this reset, please ignore this email.
-
-            Best regards,
-            Business Documents Team
-            """
-
-            email_sent = send_email(user.email, subject, body)
-
-            if email_sent:
-                response_data = {'success': True, 'message': 'Password reset email sent! Please check your email.'}
-            else:
-                response_data = {'success': False, 'error': 'Failed to send password reset email. Please contact administrator.'}
-                logging.error(f"Failed to send reset email to {user.email}")
-                logging.info(f"Reset token for {user.email}: {reset_token}")
-
-            return jsonify(response_data)
-        else:
-            # Don't reveal that user doesn't exist
-            return jsonify({'success': True, 'message': 'Password reset email sent!'})
-
-    return render_template('auth/forgot_password.html')
-
-@app.route('/reset-password/<token>', methods=['GET', 'POST'])
-def reset_password(token):
-    """Reset password"""
-    if request.method == 'POST':
-        data = request.get_json()
-        password = data.get('password')
-
-        if not password:
-            return jsonify({'success': False, 'error': 'Password is required'}), 400
-
-        user = User.query.filter_by(reset_token=token).first()
-        if user and user.reset_token_expires > datetime.utcnow():
-            user.set_password(password)
-            user.reset_token = None
-            user.reset_token_expires = None
-            db.session.commit()
-
-            return jsonify({'success': True, 'message': 'Password reset successful!'})
-        else:
-            return jsonify({'success': False, 'error': 'Invalid or expired reset token'}), 400
-
-    return render_template('auth/reset_password.html', token=token)
+    return render_template('profile.html', user=user)
 
 @app.route('/dashboard')
 @login_required
@@ -1320,6 +1275,12 @@ def delete_user(user_id):
         # Delete download codes
         DownloadCode.query.filter_by(user_id=user_id).delete()
 
+        # Delete activity logs
+        ActivityLog.query.filter_by(user_id=user_id).delete()
+
+        # Delete generated documents
+        GeneratedDocument.query.filter_by(user_id=user_id).delete()
+
         # Delete user (remaining cascades will handle PDF codes and requests)
         db.session.delete(user)
         db.session.commit()
@@ -1331,9 +1292,295 @@ def delete_user(user_id):
         logging.error(f"Error deleting user: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to delete user'}), 500
 
+@app.route('/api/admin/update-user-password/<int:user_id>', methods=['POST'])
+@admin_required
+def update_user_password(user_id):
+    """Admin updates user password"""
+    try:
+        data = request.get_json()
+        new_password = data.get('password')
+
+        if not new_password:
+            return jsonify({'success': False, 'error': 'Password is required'}), 400
+
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'success': False, 'error': 'User not found'}), 404
+
+        user.set_password(new_password)
+        db.session.commit()
+
+        # Log admin activity
+        admin_user = User.query.get(session['user_id'])
+        log_activity(session['user_id'], 'admin_password_change', f"Admin {admin_user.username} changed password for user {user.username}", request.remote_addr, request.user_agent.string)
+
+        return jsonify({'success': True, 'message': 'Password updated successfully'})
+
+    except Exception as e:
+        logging.error(f"Error updating user password: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to update password'}), 500
+
+@app.route('/api/admin/activity-logs')
+@admin_required
+def get_activity_logs():
+    """Get activity logs for admin"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
+        
+        logs = ActivityLog.query.order_by(ActivityLog.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+        logs_data = []
+        for log in logs.items:
+            logs_data.append({
+                'id': log.id,
+                'user': f"{log.user.first_name} {log.user.last_name}" if log.user else 'Unknown',
+                'username': log.user.username if log.user else 'Unknown',
+                'activity_type': log.activity_type,
+                'description': log.description,
+                'ip_address': log.ip_address,
+                'created_at': log.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            })
+
+        return jsonify({
+            'success': True,
+            'logs': logs_data,
+            'total': logs.total,
+            'pages': logs.pages,
+            'current_page': page
+        })
+
+    except Exception as e:
+        logging.error(f"Error getting activity logs: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get activity logs'}), 500
+
+@app.route('/api/admin/generated-documents')
+@admin_required
+def get_generated_documents():
+    """Get all generated documents for admin"""
+    try:
+        documents = GeneratedDocument.query.order_by(GeneratedDocument.created_at.desc()).all()
+        
+        documents_data = []
+        for doc in documents:
+            documents_data.append({
+                'id': doc.id,
+                'user': f"{doc.user.first_name} {doc.user.last_name}",
+                'username': doc.user.username,
+                'document_type': doc.document_type,
+                'document_title': doc.document_title,
+                'file_path': doc.file_path,
+                'created_at': doc.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            })
+
+        return jsonify({'success': True, 'documents': documents_data})
+
+    except Exception as e:
+        logging.error(f"Error getting generated documents: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get generated documents'}), 500
+
+@app.route('/api/admin/download-generated-document/<int:doc_id>')
+@admin_required
+def download_generated_document(doc_id):
+    """Download generated document"""
+    try:
+        doc = GeneratedDocument.query.get(doc_id)
+        if not doc:
+            return jsonify({'success': False, 'error': 'Document not found'}), 404
+
+        if os.path.exists(doc.file_path):
+            return send_from_directory(
+                os.path.dirname(doc.file_path),
+                os.path.basename(doc.file_path),
+                as_attachment=True,
+                download_name=f"{doc.document_title}.pdf"
+            )
+        else:
+            return jsonify({'success': False, 'error': 'File not found on disk'}), 404
+
+    except Exception as e:
+        logging.error(f"Error downloading document: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to download document'}), 500
+
+@app.route('/api/save-generated-document', methods=['POST'])
+@login_required
+def save_generated_document():
+    """Save generated document info"""
+    try:
+        data = request.get_json()
+        
+        # Create generated documents directory if it doesn't exist
+        docs_dir = os.path.join(os.getcwd(), 'generated_documents')
+        os.makedirs(docs_dir, exist_ok=True)
+        
+        # Generate filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{data.get('document_type', 'document')}_{timestamp}.pdf"
+        file_path = os.path.join(docs_dir, filename)
+        
+        # Save document record
+        doc = GeneratedDocument(
+            user_id=session['user_id'],
+            document_type=data.get('document_type', 'unknown'),
+            document_title=data.get('document_title', 'Untitled Document'),
+            file_path=file_path
+        )
+        
+        db.session.add(doc)
+        db.session.commit()
+        
+        # Log PDF generation activity
+        user = User.query.get(session['user_id'])
+        log_activity(session['user_id'], 'pdf_generated', f"User {user.username} generated {data.get('document_type')} - {data.get('document_title')}", request.remote_addr, request.user_agent.string)
+        
+        return jsonify({
+            'success': True,
+            'file_path': file_path,
+            'document_id': doc.id
+        })
+        
+    except Exception as e:
+        logging.error(f"Error saving generated document: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to save document info'}), 500
+
+@app.route('/api/admin/backup-database', methods=['POST'])
+@admin_required
+def backup_database():
+    """Create database backup"""
+    try:
+        import shutil
+        from datetime import datetime
+        
+        # Create backups directory
+        backup_dir = get_backup_directory()
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        # Generate backup filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_filename = f"database_backup_{timestamp}.db"
+        backup_path = os.path.join(backup_dir, backup_filename)
+        
+        # Copy database file
+        db_path = os.path.join(os.getcwd(), 'instance', 'business_docs.db')
+        if os.path.exists(db_path):
+            shutil.copy2(db_path, backup_path)
+            
+            # Also backup uploads and generated documents
+            if os.path.exists('uploads'):
+                shutil.copytree('uploads', os.path.join(backup_dir, f"uploads_backup_{timestamp}"), dirs_exist_ok=True)
+            
+            if os.path.exists('generated_documents'):
+                shutil.copytree('generated_documents', os.path.join(backup_dir, f"generated_documents_backup_{timestamp}"), dirs_exist_ok=True)
+            
+            return jsonify({'success': True, 'message': 'Backup created successfully', 'backup_path': backup_path})
+        else:
+            return jsonify({'success': False, 'error': 'Database file not found'}), 404
+            
+    except Exception as e:
+        logging.error(f"Error creating backup: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to create backup'}), 500
+
+@app.route('/api/admin/backup-settings', methods=['GET', 'POST'])
+@admin_required
+def backup_settings():
+    """Get or update backup settings"""
+    try:
+        if request.method == 'GET':
+            backup_dir_setting = SystemSettings.query.filter_by(setting_key='backup_directory').first()
+            backup_dir = backup_dir_setting.setting_value if backup_dir_setting else os.path.join(os.getcwd(), 'backups')
+            
+            return jsonify({'success': True, 'backup_directory': backup_dir})
+            
+        elif request.method == 'POST':
+            data = request.get_json()
+            new_backup_dir = data.get('backup_directory')
+            
+            if not new_backup_dir:
+                return jsonify({'success': False, 'error': 'Backup directory is required'}), 400
+            
+            # Update or create setting
+            backup_dir_setting = SystemSettings.query.filter_by(setting_key='backup_directory').first()
+            if backup_dir_setting:
+                backup_dir_setting.setting_value = new_backup_dir
+                backup_dir_setting.updated_at = datetime.utcnow()
+            else:
+                backup_dir_setting = SystemSettings(setting_key='backup_directory', setting_value=new_backup_dir)
+                db.session.add(backup_dir_setting)
+            
+            db.session.commit()
+            
+            return jsonify({'success': True, 'message': 'Backup directory updated successfully'})
+            
+    except Exception as e:
+        logging.error(f"Error handling backup settings: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to handle backup settings'}), 500
+
+def get_backup_directory():
+    """Get the configured backup directory"""
+    backup_dir_setting = SystemSettings.query.filter_by(setting_key='backup_directory').first()
+    return backup_dir_setting.setting_value if backup_dir_setting else os.path.join(os.getcwd(), 'backups')
+
 @app.route('/offline.html')
 def offline():
     return render_template('offline.html')
 
+@app.route('/api/get-current-user')
+def get_current_user():
+    """Get current logged in user info"""
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        if user:
+            return jsonify({
+                'success': True,
+                'username': user.username,
+                'name': f"{user.first_name} {user.last_name}"
+            })
+    
+    return jsonify({'success': False, 'error': 'Not logged in'}), 401
+
+def setup_automatic_backup():
+    """Setup automatic backup every 24 hours"""
+    import threading
+    import time
+    
+    def backup_scheduler():
+        while True:
+            time.sleep(24 * 60 * 60)  # 24 hours
+            try:
+                with app.app_context():
+                    import shutil
+                    from datetime import datetime
+                    
+                    backup_dir = get_backup_directory()
+                    os.makedirs(backup_dir, exist_ok=True)
+                    
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    
+                    # Backup database
+                    db_path = os.path.join(os.getcwd(), 'instance', 'business_docs.db')
+                    if os.path.exists(db_path):
+                        backup_db_path = os.path.join(backup_dir, f"auto_database_backup_{timestamp}.db")
+                        shutil.copy2(db_path, backup_db_path)
+                    
+                    # Backup uploads
+                    if os.path.exists('uploads'):
+                        shutil.copytree('uploads', os.path.join(backup_dir, f"auto_uploads_backup_{timestamp}"), dirs_exist_ok=True)
+                    
+                    # Backup generated documents
+                    if os.path.exists('generated_documents'):
+                        shutil.copytree('generated_documents', os.path.join(backup_dir, f"auto_generated_documents_backup_{timestamp}"), dirs_exist_ok=True)
+                    
+                    logging.info(f"Automatic backup completed: {timestamp}")
+                    
+            except Exception as e:
+                logging.error(f"Automatic backup failed: {str(e)}")
+    
+    # Start backup scheduler in background thread
+    backup_thread = threading.Thread(target=backup_scheduler, daemon=True)
+    backup_thread.start()
+
 if __name__ == '__main__':
+    setup_automatic_backup()
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -181,3 +181,45 @@ class SMTPSettings(db.Model):
 
     def __repr__(self):
         return f'<SMTPSettings {self.smtp_server}:{self.smtp_port}>'
+
+class ActivityLog(db.Model):
+    """Model for tracking user activities"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    activity_type = db.Column(db.String(50), nullable=False)  # login, logout, pdf_generated, profile_edit, etc.
+    description = db.Column(db.Text, nullable=False)
+    ip_address = db.Column(db.String(45), nullable=True)
+    user_agent = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationship
+    user = db.relationship('User', backref='activity_logs')
+
+    def __repr__(self):
+        return f'<ActivityLog {self.activity_type} - User {self.user_id}>'
+
+class GeneratedDocument(db.Model):
+    """Model for tracking generated PDF documents"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    document_type = db.Column(db.String(50), nullable=False)  # invoice, quote, receipt
+    document_title = db.Column(db.String(200), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationship
+    user = db.relationship('User', backref='generated_documents')
+
+    def __repr__(self):
+        return f'<GeneratedDocument {self.document_title} - User {self.user_id}>'
+
+class SystemSettings(db.Model):
+    """Model for storing system settings"""
+    id = db.Column(db.Integer, primary_key=True)
+    setting_key = db.Column(db.String(100), unique=True, nullable=False)
+    setting_value = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<SystemSettings {self.setting_key}>'

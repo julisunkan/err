@@ -1,4 +1,3 @@
-
 // Simple Receipt PDF Generator - Black and White Design
 class SimplePDFGenerator {
     constructor() {
@@ -70,16 +69,16 @@ class SimplePDFGenerator {
 
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            
+
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                
+
                 canvas.width = img.width;
                 canvas.height = img.height;
-                
+
                 ctx.drawImage(img, 0, 0);
-                
+
                 try {
                     const dataURL = canvas.toDataURL('image/jpeg', 0.8);
                     resolve(dataURL);
@@ -88,12 +87,12 @@ class SimplePDFGenerator {
                     resolve(null);
                 }
             };
-            
+
             img.onerror = () => {
                 console.warn('Failed to load image:', url);
                 resolve(null);
             };
-            
+
             img.src = url;
         });
     }
@@ -110,7 +109,7 @@ class SimplePDFGenerator {
                 if (logoData) {
                     const logoSize = 25; // Logo size in mm
                     const logoX = this.pageWidth - this.margin - logoSize;
-                    
+
                     this.doc.addImage(logoData, 'JPEG', logoX, headerY, logoSize, logoSize);
                     logoAdded = true;
                 }
@@ -124,7 +123,7 @@ class SimplePDFGenerator {
             this.setFont(this.fontSize.title, 'bold');
             const maxNameWidth = logoAdded ? this.pageWidth - (2 * this.margin) - 30 : this.pageWidth - (2 * this.margin);
             const nameLines = this.doc.splitTextToSize(businessData.businessName, maxNameWidth);
-            
+
             for (let i = 0; i < nameLines.length; i++) {
                 this.doc.text(nameLines[i], this.margin, headerY + (i * 8));
             }
@@ -142,7 +141,7 @@ class SimplePDFGenerator {
         if (businessData.businessAddress) {
             const maxAddressWidth = this.pageWidth - (2 * this.margin);
             const addressLines = this.doc.splitTextToSize(businessData.businessAddress, maxAddressWidth);
-            
+
             for (let i = 0; i < addressLines.length; i++) {
                 this.doc.text(addressLines[i], this.margin, headerY + (i * 5));
             }
@@ -211,7 +210,7 @@ class SimplePDFGenerator {
         if (clientData.address) {
             const maxAddressWidth = this.pageWidth - (2 * this.margin);
             const addressLines = this.doc.splitTextToSize(clientData.address, maxAddressWidth);
-            
+
             for (let i = 0; i < addressLines.length; i++) {
                 this.doc.text(addressLines[i], this.margin, this.currentY + (i * 5));
             }
@@ -502,6 +501,32 @@ class SimplePDFGenerator {
             const doc = await this.generatePDF(documentData);
             const filename = `${documentData.type}-${documentData.number}.pdf`;
             doc.save(filename);
+
+        // Save document info to backend
+        try {
+            const documentInfo = {
+                document_type: documentData.type.toLowerCase(),
+                document_title: `${documentData.type} ${documentData.number}`
+            };
+
+            fetch('/api/save-generated-document', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(documentInfo)
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      console.log('Document info saved successfully');
+                  }
+              }).catch(error => {
+                  console.error('Failed to save document info:', error);
+              });
+        } catch (error) {
+            console.error('Error saving document info:', error);
+        }
+
             return filename;
         } catch (error) {
             console.error('Error downloading PDF:', error);

@@ -136,6 +136,21 @@
                     <i class="fas fa-cog"></i> Settings
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" id="activity-tab" data-bs-toggle="tab" href="#activity">
+                    <i class="fas fa-history"></i> Activity Logs
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="documents-tab" data-bs-toggle="tab" href="#documents">
+                    <i class="fas fa-file-pdf"></i> Documents
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="backup-tab" data-bs-toggle="tab" href="#backup">
+                    <i class="fas fa-download"></i> Backup & Restore
+                </a>
+            </li>
         </ul>
 
         <div class="tab-content mt-3">
@@ -369,6 +384,87 @@
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Logs Tab -->
+            <div class="tab-pane fade" id="activity">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-history"></i> User Activity Logs</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="activity-logs-container">
+                            <div class="text-center">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <nav id="activity-pagination" class="mt-3" style="display: none;">
+                            <ul class="pagination justify-content-center">
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generated Documents Tab -->
+            <div class="tab-pane fade" id="documents">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-file-pdf"></i> Generated Documents</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="documents-container">
+                            <div class="text-center">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backup & Restore Tab -->
+            <div class="tab-pane fade" id="backup">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-download"></i> Backup & Restore</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Manual Backup</h6>
+                                <p class="text-muted">Create an immediate backup of database and files.</p>
+                                <button type="button" class="btn btn-primary" id="createBackupBtn">
+                                    <i class="fas fa-download"></i> Create Backup
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Backup Settings</h6>
+                                <form id="backupSettingsForm">
+                                    <div class="mb-3">
+                                        <label for="backupDirectory" class="form-label">Backup Directory</label>
+                                        <input type="text" class="form-control" id="backupDirectory" name="backup_directory" placeholder="/path/to/backup/folder">
+                                    </div>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-save"></i> Save Settings
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-12">
+                                <h6>Automatic Backup</h6>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> Automatic backups are created every 24 hours and saved to the configured backup directory.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -630,7 +726,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
-            
+
             // Auto dismiss after 5 seconds
             setTimeout(() => {
                 const alert = alertContainer.querySelector('.alert');
@@ -650,22 +746,22 @@
         // Handle file upload
         document.getElementById('uploadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const formData = new FormData(this);
             const userId = document.getElementById('uploadUserId').value;
-            
+
             try {
                 const response = await fetch(`/api/upload-pdf/${userId}`, {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showAlert(result.message, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
-                    setTimeout(() => location.reload(), 1000);
+                    setTimeout(() => location.reload(), 1000);```python
                 } else {
                     showAlert(result.error, 'error');
                 }
@@ -685,11 +781,11 @@
         // Handle response submission
         document.getElementById('responseForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const requestId = document.getElementById('responseRequestId').value;
             const status = document.getElementById('responseStatus').value;
             const response = document.getElementById('responseText').value;
-            
+
             try {
                 const result = await fetch(`/api/respond-request/${requestId}`, {
                     method: 'POST',
@@ -698,9 +794,9 @@
                     },
                     body: JSON.stringify({ status, response })
                 });
-                
+
                 const data = await result.json();
-                
+
                 if (data.success) {
                     showAlert(data.message, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('responseModal')).hide();
@@ -733,10 +829,10 @@
         // Handle message sending
         document.getElementById('messageForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
-            
+
             try {
                 const response = await fetch('/api/send-message', {
                     method: 'POST',
@@ -745,9 +841,9 @@
                     },
                     body: JSON.stringify(data)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showAlert(result.message, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('messageModal')).hide();
@@ -786,7 +882,7 @@
             try {
                 const response = await fetch('/api/admin/smtp-settings');
                 const data = await response.json();
-                
+
                 if (data.success) {
                     const settings = data.settings;
                     document.getElementById('smtpServer').value = settings.smtp_server;
@@ -796,7 +892,7 @@
                     document.getElementById('fromEmail').value = settings.from_email;
                     document.getElementById('fromName').value = settings.from_name;
                     document.getElementById('useTls').checked = settings.use_tls;
-                    
+
                     showAlert('SMTP settings loaded successfully', 'success');
                 } else {
                     showAlert('Failed to load SMTP settings', 'error');
@@ -809,11 +905,11 @@
         // Handle SMTP form submission
         document.getElementById('smtpForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
             data.use_tls = document.getElementById('useTls').checked;
-            
+
             try {
                 const response = await fetch('/api/admin/smtp-settings', {
                     method: 'POST',
@@ -822,9 +918,9 @@
                     },
                     body: JSON.stringify(data)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showAlert(result.message, 'success');
                 } else {
@@ -843,9 +939,9 @@
         // Handle SMTP test
         document.getElementById('smtpTestForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const testEmail = document.getElementById('testEmail').value;
-            
+
             try {
                 const response = await fetch('/api/admin/test-smtp', {
                     method: 'POST',
@@ -854,9 +950,9 @@
                     },
                     body: JSON.stringify({ test_email: testEmail })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showAlert(result.message, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('smtpTestModal')).hide();
@@ -902,7 +998,7 @@
         // Handle edit user form submission
         document.getElementById('editUserForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const userId = document.getElementById('editUserId').value;
             const userData = {
                 username: document.getElementById('editUsername').value,
@@ -910,7 +1006,7 @@
                 first_name: document.getElementById('editFirstName').value,
                 last_name: document.getElementById('editLastName').value
             };
-            
+
             try {
                 const response = await fetch(`/api/admin/edit-user/${userId}`, {
                     method: 'PUT',
@@ -919,9 +1015,9 @@
                     },
                     body: JSON.stringify(userData)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showAlert(result.message, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();

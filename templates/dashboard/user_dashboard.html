@@ -20,15 +20,23 @@
                     <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-user"></i> {{ user.first_name }} {{ user.last_name }}
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="/"><i class="fas fa-file-invoice"></i> Document Generator</a></li>
-                        <li><a class="dropdown-item" href="/messages"><i class="fas fa-envelope"></i> Messages
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('profile') }}">
+                            <i class="fas fa-user"></i> Edit Profile
+                        </a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('messages') }}">
+                            <i class="fas fa-envelope"></i> Messages
                             {% if unread_messages > 0 %}
-                            <span class="badge bg-danger ms-1">{{ unread_messages }}</span>
+                            <span class="badge bg-danger">{{ unread_messages }}</span>
                             {% endif %}
                         </a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('index') }}">
+                            <i class="fas fa-file-invoice"></i> Document Generator
+                        </a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a></li>
                     </ul>
                 </li>
             </ul>
