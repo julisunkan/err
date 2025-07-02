@@ -5,6 +5,8 @@ class PWAManager {
     constructor() {
         this.deferredPrompt = null;
         this.isInstalled = false;
+        this.isOnline = navigator.onLine;
+        this.offlineQueue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
         this.init();
     }
 
@@ -13,6 +15,7 @@ class PWAManager {
         this.setupInstallPrompt();
         this.setupUpdateCheck();
         this.addInstallButton();
+        this.setupOfflineSupport();
     }
 
     checkInstallation() {
@@ -93,6 +96,109 @@ class PWAManager {
             this.deferredPrompt = null;
             this.hideInstallOption();
         }
+    }
+
+    setupOfflineSupport() {
+        // Monitor online/offline status
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.showOnlineStatus();
+            this.syncOfflineQueue();
+        });
+
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            this.showOfflineStatus();
+        });
+
+        // Show initial status
+        if (!this.isOnline) {
+            this.showOfflineStatus();
+        }
+    }
+
+    showOnlineStatus() {
+        this.removeOfflineIndicator();
+        this.showToast('You\'re back online! Syncing data...', 'success');
+    }
+
+    showOfflineStatus() {
+        this.addOfflineIndicator();
+        this.showToast('You\'re offline. Some features may be limited.', 'warning');
+    }
+
+    addOfflineIndicator() {
+        // Remove existing indicator
+        this.removeOfflineIndicator();
+        
+        // Create offline indicator
+        const indicator = document.createElement('div');
+        indicator.id = 'offline-indicator';
+        indicator.innerHTML = `
+            <div class="alert alert-warning position-fixed top-0 start-50 translate-middle-x mt-2" style="z-index: 9999;">
+                <i class="fas fa-wifi-slash me-2"></i>
+                You're offline - Limited functionality available
+            </div>
+        `;
+        document.body.appendChild(indicator);
+    }
+
+    removeOfflineIndicator() {
+        const existing = document.getElementById('offline-indicator');
+        if (existing) {
+            existing.remove();
+        }
+    }
+
+    queueOfflineAction(action) {
+        this.offlineQueue.push({
+            ...action,
+            timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('offlineQueue', JSON.stringify(this.offlineQueue));
+    }
+
+    async syncOfflineQueue() {
+        if (this.offlineQueue.length === 0) return;
+
+        const queue = [...this.offlineQueue];
+        this.offlineQueue = [];
+        localStorage.setItem('offlineQueue', JSON.stringify(this.offlineQueue));
+
+        for (const action of queue) {
+            try {
+                await this.processOfflineAction(action);
+            } catch (error) {
+                console.error('Failed to sync offline action:', error);
+                // Re-queue failed actions
+                this.queueOfflineAction(action);
+            }
+        }
+    }
+
+    async processOfflineAction(action) {
+        switch (action.type) {
+            case 'saveSettings':
+                await fetch('/api/save-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(action.data)
+                });
+                break;
+            case 'saveClient':
+                await fetch('/api/save-client', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(action.data)
+                });
+                break;
+            default:
+                console.warn('Unknown offline action type:', action.type);
+        }
+    }
+
+    isOffline() {
+        return !this.isOnline;
     }
 
     showToast(message, type = 'info') {

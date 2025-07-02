@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Business Documents Generator</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .offline-container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 500px;
+        }
+        .offline-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+        h1 {
+            margin-bottom: 1rem;
+            font-size: 2rem;
+            font-weight: 300;
+        }
+        p {
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        .retry-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .retry-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: white;
+            text-decoration: none;
+        }
+        .features {
+            margin-top: 3rem;
+            text-align: left;
+        }
+        .feature {
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+        }
+        .feature-icon {
+            margin-right: 0.5rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📱</div>
+        <h1>You're Offline</h1>
+        <p>Don't worry! You can still use some features of Business Documents Generator while offline.</p>
+        
+        <a href="/" class="retry-btn" onclick="window.location.reload()">
+            Try Again
+        </a>
+        
+        <div class="features">
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                <span>Create documents with cached data</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                <span>Generate PDFs locally</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                <span>View previously loaded content</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">⏳</span>
+                <span>Changes will sync when connection returns</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check for connection and redirect when online
+        window.addEventListener('online', function() {
+            window.location.href = '/';
+        });
+        
+        // Register service worker if not already registered
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(function(registration) {
+                    console.log('Service Worker registered from offline page');
+                })
+                .catch(function(error) {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
+    </script>
+</body>
+</html>
