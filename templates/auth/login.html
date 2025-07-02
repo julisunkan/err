@@ -112,8 +112,15 @@
                         const result = await response.json();
 
                         if (result.success) {
-                            this.reset();
-                            window.location.href = result.redirect;
+                            showAlert('Login successful!', 'success');
+                            // Store username for PDF generation
+                            if (data.username) {
+                                sessionStorage.setItem('current_username', data.username);
+                            }
+                            // Redirect after short delay
+                            setTimeout(() => {
+                                window.location.href = result.redirect || '/dashboard';
+                            }, 1000);
                         } else {
                             showAlert(result.error, 'danger');
                         }

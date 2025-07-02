@@ -497,7 +497,21 @@ class SimplePDFGenerator {
 
                 // Add generation info with username (requirement #5)
                 const generatedDate = new Date().toLocaleDateString();
-                const currentUsername = sessionStorage.getItem('current_username') || 'Unknown User';
+                let currentUsername = 'Unknown User';
+                
+                // Try to get username from various sources
+                try {
+                    const response = await fetch('/api/get-current-user');
+                    if (response.ok) {
+                        const userData = await response.json();
+                        if (userData.success) {
+                            currentUsername = userData.username;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Could not fetch current user:', error);
+                }
+                
                 this.doc.text(`Generated on ${generatedDate} by ${currentUsername}`, 20, this.pageHeight - 10);
             }
 

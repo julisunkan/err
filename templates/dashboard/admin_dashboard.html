@@ -1034,7 +1034,175 @@
         // Load SMTP settings on page load
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('loadSmtpBtn').click();
+            
+            // Load activity logs when tab is clicked
+            const activityTab = document.getElementById('activity-tab');
+            if (activityTab) {
+                activityTab.addEventListener('click', loadActivityLogs);
+            }
+            
+            // Load documents when tab is clicked
+            const documentsTab = document.getElementById('documents-tab');
+            if (documentsTab) {
+                documentsTab.addEventListener('click', loadGeneratedDocuments);
+            }
+            
+            // Backup button
+            const createBackupBtn = document.getElementById('createBackupBtn');
+            if (createBackupBtn) {
+                createBackupBtn.addEventListener('click', createBackup);
+            }
+            
+            // Backup settings form
+            const backupSettingsForm = document.getElementById('backupSettingsForm');
+            if (backupSettingsForm) {
+                backupSettingsForm.addEventListener('submit', saveBackupSettings);
+            }
         });
+
+        // Load activity logs
+        async function loadActivityLogs() {
+            try {
+                const response = await fetch('/api/admin/activity-logs');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayActivityLogs(data.logs);
+                }
+            } catch (error) {
+                console.error('Error loading activity logs:', error);
+            }
+        }
+
+        // Display activity logs
+        function displayActivityLogs(logs) {
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Activity</th>
+                                <th>Description</th>
+                                <th>IP Address</th>
+                                <th>Date/Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            logs.forEach(log => {
+                html += `
+                    <tr>
+                        <td>${log.user} (${log.username})</td>
+                        <td>${log.activity_type}</td>
+                        <td>${log.description}</td>
+                        <td>${log.ip_address || 'N/A'}</td>
+                        <td>${log.created_at}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table></div>';
+            document.getElementById('activity-logs-container').innerHTML = html;
+        }
+
+        // Load generated documents
+        async function loadGeneratedDocuments() {
+            try {
+                const response = await fetch('/api/admin/generated-documents');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayGeneratedDocuments(data.documents);
+                }
+            } catch (error) {
+                console.error('Error loading documents:', error);
+            }
+        }
+
+        // Display generated documents
+        function displayGeneratedDocuments(documents) {
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Document Type</th>
+                                <th>Title</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            documents.forEach(doc => {
+                html += `
+                    <tr>
+                        <td>${doc.user} (${doc.username})</td>
+                        <td>${doc.document_type}</td>
+                        <td>${doc.document_title}</td>
+                        <td>${doc.created_at}</td>
+                        <td>
+                            <a href="/api/admin/download-generated-document/${doc.id}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table></div>';
+            document.getElementById('documents-container').innerHTML = html;
+        }
+
+        // Create backup
+        async function createBackup() {
+            try {
+                const response = await fetch('/api/admin/backup-database', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('Backup created successfully!', 'success');
+                } else {
+                    showAlert('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to create backup', 'error');
+            }
+        }
+
+        // Save backup settings
+        async function saveBackupSettings(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/api/admin/backup-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('Backup settings saved successfully!', 'success');
+                } else {
+                    showAlert('Error: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to save backup settings', 'error');
+            }
+        }
     </script>
     <script>
         function openUploadModal(userId) {

@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
+
     <!-- Offline Support -->
     <script>
         if ('serviceWorker' in navigator) {
@@ -26,7 +26,7 @@
                 navigator.serviceWorker.register('/static/sw.js')
                     .then(function(registration) {
                         console.log('ServiceWorker registration successful');
-                        
+
                         // Check for updates
                         registration.addEventListener('updatefound', function() {
                             const newWorker = registration.installing;
@@ -1133,7 +1133,7 @@
         // Collect document data function
         function collectDocumentData() {
             const formData = new FormData(document.getElementById('documentForm'));
-            
+
             // Use verified business settings if available
             const currentSettings = window.verifiedBusinessSettings || businessSettings;
 
@@ -1539,6 +1539,66 @@
                 downloadForm.addEventListener('submit', handleDownload);
             }
         });
+
+         // Export settings function
+        async function exportSettings() {
+            try {
+                const response = await fetch('/api/export-settings');
+                const result = await response.json();
+
+                if (result.success) {
+                    const dataStr = JSON.stringify(result.data, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(dataBlob);
+                    link.download = result.filename;
+                    link.click();
+
+                    showNotification('Settings exported successfully!', 'success');
+                } else {
+                    showNotification('Error: ' + result.error, 'danger');
+                }
+            } catch (error) {
+                console.error('Export error:', error);
+                showNotification('Failed to export settings', 'danger');
+            }
+        }
+
+        // Import settings function
+        async function importSettings(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const settings = JSON.parse(text);
+
+                const response = await fetch('/api/import-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ settings })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Settings imported successfully!', 'success');
+                    // Reload settings
+                    await loadSettings();
+                } else {
+                    showNotification('Error: ' + result.error, 'danger');
+                }
+            } catch (error) {
+                console.error('Import error:', error);
+                showNotification('Failed to import settings. Please check the file format.', 'danger');
+            }
+
+            // Clear the file input
+            event.target.value = '';
+        }
     </script>
 
     <!-- Load external scripts with error handling -->
