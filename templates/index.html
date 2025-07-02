@@ -1327,7 +1327,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showSuccess('Registration successful! Please check your email for verification.');
+                    showSuccess('Registration successful! You can now login.');
                     switchTab('login-tab');
                 } else {
                     showError('Registration failed: ' + data.error);
