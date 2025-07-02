@@ -300,13 +300,13 @@
         document.getElementById('downloadPdfBtn').addEventListener('click', function() {
             try {
                 // Check if jsPDF is available
-                if (typeof window.jsPDF === 'undefined') {
+                if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
                     showToast('PDF library not loaded. Please refresh the page.', 'error');
                     return;
                 }
 
                 // Initialize jsPDF document
-                const doc = new window.jsPDF('p', 'mm', 'a4');
+                const doc = new window.jspdf.jsPDF('p', 'mm', 'a4');
 
                 // Set document properties
                 doc.setProperties({
@@ -396,7 +396,7 @@
             console.log('Code generator page loaded');
 
             // Check if jsPDF is loaded
-            if (typeof window.jspdf === 'undefined') {
+            if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
                 console.warn('jsPDF not loaded, PDF functionality may not work');
             }
         });
