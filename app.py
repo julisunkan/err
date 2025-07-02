@@ -1290,8 +1290,8 @@ def delete_user(user_id):
         for message in user.received_messages:
             db.session.delete(message)
 
-        for request in user.pdf_requests:
-            db.session.delete(request)
+        for pdf_request in user.pdf_requests:
+            db.session.delete(pdf_request)
 
         # Delete user's business settings
         user_settings = UserBusinessSettings.query.filter_by(user_id=user.id).first()
