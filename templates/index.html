@@ -801,3 +801,500 @@
         // Remove item row
         function removeItem(button) {
             const container = document.getElementById('itemsContainer');
+            const itemRows = container.querySelectorAll('.item-row');
+            
+            // Don't remove if it's the last item
+            if (itemRows.length > 1) {
+                button.closest('.item-row').remove();
+                calculateTotals();
+                updatePreview();
+            }
+        }
+
+        // Calculate totals for all items
+        function calculateTotals() {
+            const itemRows = document.querySelectorAll('.item-row');
+            let subtotal = 0;
+
+            itemRows.forEach(row => {
+                const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                const total = quantity * price;
+                
+                row.querySelector('.item-total').value = formatCurrency(total);
+                subtotal += total;
+            });
+
+            const taxRate = parseFloat(businessSettings.taxRate) || 0;
+            const tax = subtotal * (taxRate / 100);
+            const total = subtotal + tax;
+
+            document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+            document.getElementById('tax').textContent = formatCurrency(tax);
+            document.getElementById('total').textContent = formatCurrency(total);
+        }
+
+        // Format currency based on settings
+        function formatCurrency(amount) {
+            const currency = businessSettings.currency || 'USD';
+            const currencySymbols = {
+                'USD': '$',
+                'EUR': '€',
+                'GBP': '£',
+                'NGN': '₦',
+                'CAD': 'C$',
+                'AUD': 'A$'
+            };
+
+            const symbol = currencySymbols[currency] || '$';
+            return symbol + amount.toFixed(2);
+        }
+
+        // Update document preview
+        function updatePreview() {
+            const preview = document.getElementById('documentPreview');
+            const docType = document.getElementById('documentType').value;
+            const docNumber = document.getElementById('documentNumber').value;
+            const docDate = document.getElementById('documentDate').value;
+            const clientName = document.getElementById('clientName').value;
+            const clientAddress = document.getElementById('clientAddress').value;
+            const clientEmail = document.getElementById('clientEmail').value;
+            const clientPhone = document.getElementById('clientPhone').value;
+            const notes = document.getElementById('notes').value;
+
+            // Get items
+            const itemRows = document.querySelectorAll('.item-row');
+            let itemsHtml = '';
+            let subtotal = 0;
+
+            itemRows.forEach(row => {
+                const description = row.querySelector('.item-description').value;
+                const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                const total = quantity * price;
+                subtotal += total;
+
+                if (description || quantity || price) {
+                    itemsHtml += `
+                        <tr>
+                            <td>${description}</td>
+                            <td>${quantity}</td>
+                            <td>${formatCurrency(price)}</td>
+                            <td>${formatCurrency(total)}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            const taxRate = parseFloat(businessSettings.taxRate) || 0;
+            const tax = subtotal * (taxRate / 100);
+            const total = subtotal + tax;
+
+            const docTypeDisplay = docType.charAt(0).toUpperCase() + docType.slice(1).replace('_', ' ');
+
+            preview.innerHTML = `
+                <div style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px;">
+                        <div>
+                            <h2 style="color: #333; margin: 0;">${businessSettings.businessName || 'Your Business Name'}</h2>
+                            <p style="margin: 5px 0; color: #666;">${businessSettings.businessAddress || 'Your Business Address'}</p>
+                            <p style="margin: 5px 0; color: #666;">${businessSettings.businessPhone || 'Your Phone'}</p>
+                            <p style="margin: 5px 0; color: #666;">${businessSettings.businessEmail || 'your@email.com'}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <h1 style="color: #007bff; margin: 0;">${docTypeDisplay}</h1>
+                            <p style="margin: 5px 0; font-weight: bold;">#${docNumber || 'DOC-001'}</p>
+                            <p style="margin: 5px 0; color: #666;">${docDate || new Date().toISOString().split('T')[0]}</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                        <h4 style="margin: 0 0 10px 0; color: #333;">Bill To:</h4>
+                        <p style="margin: 5px 0; font-weight: bold;">${clientName || 'Client Name'}</p>
+                        <p style="margin: 5px 0; color: #666;">${clientAddress || 'Client Address'}</p>
+                        <p style="margin: 5px 0; color: #666;">${clientEmail || 'client@email.com'}</p>
+                        <p style="margin: 5px 0; color: #666;">${clientPhone || 'Client Phone'}</p>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background: #007bff; color: white;">
+                                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Description</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd; width: 80px;">Qty</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd; width: 100px;">Price</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd; width: 100px;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml || '<tr><td colspan="4" style="padding: 12px; text-align: center; color: #999; border: 1px solid #ddd;">No items added</td></tr>'}
+                        </tbody>
+                    </table>
+
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1; margin-right: 20px;">
+                            ${notes ? `<div><h4 style="margin: 0 0 10px 0; color: #333;">Notes:</h4><p style="color: #666; margin: 0;">${notes}</p></div>` : ''}
+                        </div>
+                        <div style="min-width: 250px; background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Subtotal:</span>
+                                <span>${formatCurrency(subtotal)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Tax (${taxRate}%):</span>
+                                <span>${formatCurrency(tax)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2em; padding-top: 10px; border-top: 1px solid #ddd;">
+                                <span>Total:</span>
+                                <span>${formatCurrency(total)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Verify download code
+        function verifyDownloadCode() {
+            const code = document.getElementById('pdfDownloadCode').value.trim().toUpperCase();
+            if (!code) {
+                showNotification('Please enter a download code', 'warning');
+                return;
+            }
+
+            fetch('/api/verify-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Code verified successfully!', 'success');
+                    document.getElementById('generatePDF').disabled = false;
+                    
+                    // Update business settings with verified data
+                    if (data.business_settings) {
+                        businessSettings = data.business_settings;
+                        updatePreview();
+                    }
+                } else {
+                    showNotification(data.error || 'Invalid code', 'error');
+                    document.getElementById('generatePDF').disabled = true;
+                }
+            })
+            .catch(error => {
+                console.error('Error verifying code:', error);
+                showNotification('Error verifying code', 'error');
+            });
+        }
+
+        // Generate PDF
+        function generatePDF() {
+            if (!window.jsPDF) {
+                showNotification('PDF library not loaded', 'error');
+                return;
+            }
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Get form data
+                const docType = document.getElementById('documentType').value;
+                const docNumber = document.getElementById('documentNumber').value;
+                const docDate = document.getElementById('documentDate').value;
+                const clientName = document.getElementById('clientName').value;
+                const clientAddress = document.getElementById('clientAddress').value;
+                const clientEmail = document.getElementById('clientEmail').value;
+                const clientPhone = document.getElementById('clientPhone').value;
+                const notes = document.getElementById('notes').value;
+
+                // Set up the PDF
+                doc.setFontSize(20);
+                const docTypeDisplay = docType.charAt(0).toUpperCase() + docType.slice(1).replace('_', ' ');
+                doc.text(docTypeDisplay, 20, 30);
+
+                doc.setFontSize(12);
+                doc.text(`Document #: ${docNumber}`, 20, 45);
+                doc.text(`Date: ${docDate}`, 20, 55);
+
+                // Business info
+                doc.text(businessSettings.businessName || 'Your Business', 20, 75);
+                doc.text(businessSettings.businessAddress || 'Your Address', 20, 85);
+                doc.text(businessSettings.businessPhone || 'Your Phone', 20, 95);
+
+                // Client info
+                doc.text('Bill To:', 20, 115);
+                doc.text(clientName || 'Client Name', 20, 125);
+                doc.text(clientAddress || 'Client Address', 20, 135);
+                doc.text(clientEmail || 'client@email.com', 20, 145);
+
+                // Items table
+                let yPos = 165;
+                doc.text('Description', 20, yPos);
+                doc.text('Qty', 120, yPos);
+                doc.text('Price', 140, yPos);
+                doc.text('Total', 170, yPos);
+
+                yPos += 10;
+                doc.line(20, yPos, 190, yPos); // Table header line
+
+                const itemRows = document.querySelectorAll('.item-row');
+                let subtotal = 0;
+
+                itemRows.forEach(row => {
+                    const description = row.querySelector('.item-description').value;
+                    const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+                    const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                    const total = quantity * price;
+
+                    if (description || quantity || price) {
+                        yPos += 15;
+                        doc.text(description, 20, yPos);
+                        doc.text(quantity.toString(), 120, yPos);
+                        doc.text(formatCurrency(price), 140, yPos);
+                        doc.text(formatCurrency(total), 170, yPos);
+                        subtotal += total;
+                    }
+                });
+
+                // Totals
+                yPos += 20;
+                const taxRate = parseFloat(businessSettings.taxRate) || 0;
+                const tax = subtotal * (taxRate / 100);
+                const finalTotal = subtotal + tax;
+
+                doc.text(`Subtotal: ${formatCurrency(subtotal)}`, 120, yPos);
+                yPos += 10;
+                doc.text(`Tax (${taxRate}%): ${formatCurrency(tax)}`, 120, yPos);
+                yPos += 10;
+                doc.setFontSize(14);
+                doc.text(`Total: ${formatCurrency(finalTotal)}`, 120, yPos);
+
+                // Notes
+                if (notes) {
+                    yPos += 20;
+                    doc.setFontSize(12);
+                    doc.text('Notes:', 20, yPos);
+                    yPos += 10;
+                    doc.text(notes, 20, yPos);
+                }
+
+                // Save the PDF
+                const filename = `${docType}-${docNumber}.pdf`;
+                doc.save(filename);
+                
+                showNotification('PDF generated successfully!', 'success');
+
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                showNotification('Error generating PDF', 'error');
+            }
+        }
+
+        // Generate download code (admin only)
+        function generateCode() {
+            fetch('/api/generate-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(`Download code generated: ${data.code}`, 'success');
+                } else {
+                    showNotification(data.error || 'Failed to generate code', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error generating code:', error);
+                showNotification('Error generating code', 'error');
+            });
+        }
+
+        // Handle download form
+        function handleDownload(e) {
+            e.preventDefault();
+            const code = document.getElementById('downloadCode').value.trim().toUpperCase();
+            
+            if (!code) {
+                showNotification('Please enter a download code', 'warning');
+                return;
+            }
+
+            fetch('/api/verify-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Code verified! You can now generate documents.', 'success');
+                    // Switch to generator tab
+                    switchTab('generator-tab');
+                } else {
+                    showNotification(data.error || 'Invalid code', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error verifying code:', error);
+                showNotification('Error verifying code', 'error');
+            });
+        }
+
+        // Handle login
+        function handleLogin(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showNotification('Login successful!', 'success');
+                    setTimeout(() => {
+                        window.location.href = result.redirect || '/dashboard';
+                    }, 1000);
+                } else {
+                    showNotification(result.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                showNotification('Login failed', 'error');
+            });
+        }
+
+        // Handle settings form
+        function handleSettingsSubmit(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            fetch('/api/save-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showNotification('Settings saved successfully!', 'success');
+                    // Update business settings
+                    businessSettings = data;
+                    updatePreview();
+                } else {
+                    showNotification(result.error || 'Failed to save settings', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Settings error:', error);
+                showNotification('Failed to save settings', 'error');
+            });
+        }
+
+        // Export user settings
+        function exportUserSettings() {
+            fetch('/api/export-settings')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    showNotification('Settings exported successfully!', 'success');
+                } else {
+                    showNotification(data.error || 'Export failed', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Export error:', error);
+                showNotification('Export failed', 'error');
+            });
+        }
+
+        // Import user settings
+        function importUserSettings(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const settings = JSON.parse(event.target.result);
+                    
+                    fetch('/api/import-settings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ settings: settings })
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            showNotification('Settings imported successfully!', 'success');
+                            location.reload(); // Reload to show updated settings
+                        } else {
+                            showNotification(result.error || 'Import failed', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Import error:', error);
+                        showNotification('Import failed', 'error');
+                    });
+
+                } catch (error) {
+                    showNotification('Invalid settings file', 'error');
+                }
+            };
+            reader.readAsText(file);
+            
+            // Clear the input
+            e.target.value = '';
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const container = document.getElementById('notification-container');
+            const alertClass = type === 'error' ? 'danger' : type;
+            
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${alertClass} alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            container.appendChild(alert);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
