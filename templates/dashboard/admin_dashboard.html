@@ -826,7 +826,8 @@
                         </div>
                         <div class="mb-3">
                             <label for="editLastName" class="form-label">Last Name</label>
-                            <input type="text" class="form-control form-control-modern" id="editLastName" required                        </div>
+                            <input type="text" class="form-control form-control-modern" id="editLastName" required>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -1019,76 +1020,148 @@
 
         // User management functions
         function uploadForUser(userId, userName) {
+            if (!userId || !userName) {
+                showAlert('Invalid user data', 'error');
+                return;
+            }
+            
             document.getElementById('uploadUserId').value = userId;
-            document.getElementById('uploadUserName').innerText = userName;
-            new bootstrap.Modal(document.getElementById('uploadModal')).show();
+            document.getElementById('uploadUserName').textContent = userName;
+            
+            // Reset form
+            document.getElementById('uploadForm').reset();
+            
+            // Show modal
+            const uploadModal = new bootstrap.Modal(document.getElementById('uploadModal'));
+            uploadModal.show();
         }
 
         function uploadFile() {
             const form = document.getElementById('uploadForm');
             const formData = new FormData(form);
             const userId = document.getElementById('uploadUserId').value;
+            const fileInput = document.getElementById('uploadFile');
 
-            if (!document.getElementById('uploadFile').files.length) {
+            if (!fileInput.files.length) {
                 showAlert('Please select a file to upload', 'error');
                 return;
             }
+
+            // Validate file size (16MB limit)
+            const file = fileInput.files[0];
+            if (file.size > 16 * 1024 * 1024) {
+                showAlert('File size must be less than 16MB', 'error');
+                return;
+            }
+
+            // Show upload progress
+            const uploadButton = document.querySelector('#uploadModal .btn-primary');
+            const originalText = uploadButton.textContent;
+            uploadButton.disabled = true;
+            uploadButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
 
             fetch(`/api/upload-pdf/${userId}`, {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(result => {
                 if (result.success) {
                     showAlert(result.message, 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+                    const modalInstance = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
                     form.reset();
                     setTimeout(() => location.reload(), 1000);
                 } else {
-                    showAlert(result.error, 'error');
+                    showAlert(result.error || 'Upload failed', 'error');
                 }
             })
             .catch(error => {
+                console.error('Upload error:', error);
                 showAlert('Upload failed: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // Reset upload button
+                uploadButton.disabled = false;
+                uploadButton.innerHTML = originalText;
             });
         }
 
         function messageUser(userId, userName) {
+            if (!userId || !userName) {
+                showAlert('Invalid user data', 'error');
+                return;
+            }
+            
             document.getElementById('messageUserId').value = userId;
-            document.getElementById('messageUserName').innerText = userName;
+            document.getElementById('messageUserName').textContent = userName;
             document.getElementById('messageText').value = '';
-            new bootstrap.Modal(document.getElementById('messageModal')).show();
+            
+            // Show modal
+            const messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
+            messageModal.show();
         }
 
         function sendMessage() {
             const userId = document.getElementById('messageUserId').value;
-            const message = document.getElementById('messageText').value.trim();
+            const messageText = document.getElementById('messageText').value.trim();
 
-            if (!message) {
+            if (!messageText) {
                 showAlert('Message cannot be empty', 'error');
                 return;
             }
+
+            if (!userId) {
+                showAlert('Invalid user ID', 'error');
+                return;
+            }
+
+            // Show sending progress
+            const sendButton = document.querySelector('#messageModal .btn-primary');
+            const originalText = sendButton.textContent;
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
 
             fetch(`/api/admin/send-message/${userId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: message })
+                body: JSON.stringify({ message: messageText })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(result => {
                 if (result.success) {
-                    showAlert(result.message, 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('messageModal')).hide();
+                    showAlert(result.message || 'Message sent successfully', 'success');
+                    const modalInstance = bootstrap.Modal.getInstance(document.getElementById('messageModal'));
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
                     document.getElementById('messageForm').reset();
                 } else {
-                    showAlert(result.error, 'error');
+                    showAlert(result.error || 'Failed to send message', 'error');
                 }
             })
             .catch(error => {
+                console.error('Message error:', error);
                 showAlert('Message failed: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // Reset send button
+                sendButton.disabled = false;
+                sendButton.innerHTML = originalText;
             });
         }
 
@@ -1104,11 +1177,28 @@
         function saveUserEdit() {
             const userId = document.getElementById('editUserId').value;
             const userData = {
-                username: document.getElementById('editUsername').value,
-                email: document.getElementById('editEmail').value,
-                first_name: document.getElementById('editFirstName').value,
-                last_name: document.getElementById('editLastName').value
+                username: document.getElementById('editUsername').value.trim(),
+                email: document.getElementById('editEmail').value.trim(),
+                first_name: document.getElementById('editFirstName').value.trim(),
+                last_name: document.getElementById('editLastName').value.trim()
             };
+
+            // Validate form data
+            if (!userData.username || !userData.email || !userData.first_name || !userData.last_name) {
+                showAlert('All fields are required', 'error');
+                return;
+            }
+
+            if (!userData.email.includes('@')) {
+                showAlert('Please enter a valid email address', 'error');
+                return;
+            }
+
+            // Show saving progress
+            const saveButton = document.querySelector('#editUserModal .btn-primary');
+            const originalText = saveButton.textContent;
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
             fetch(`/api/admin/edit-user/${userId}`, {
                 method: 'PUT',
@@ -1117,18 +1207,32 @@
                 },
                 body: JSON.stringify(userData)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(result => {
                 if (result.success) {
-                    showAlert(result.message, 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                    showAlert(result.message || 'User updated successfully', 'success');
+                    const modalInstance = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
                     setTimeout(() => location.reload(), 1000);
                 } else {
-                    showAlert(result.error, 'error');
+                    showAlert(result.error || 'Update failed', 'error');
                 }
             })
             .catch(error => {
+                console.error('Update error:', error);
                 showAlert('Update failed: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // Reset save button
+                saveButton.disabled = false;
+                saveButton.innerHTML = originalText;
             });
         }
 
