@@ -73,20 +73,51 @@ class MinimalPDFGenerator {
         return y + (lines.length * this.lineHeight);
     }
 
-    // Add simple header
-    addSimpleHeader(businessData) {
-        // Company name
+    // Add simple header with business logo
+    async addSimpleHeader(businessData) {
+        const headerStartY = this.currentY;
+        let logoAdded = false;
+
+        // Add business logo at top right if URL provided
+        if (businessData.businessLogoUrl) {
+            try {
+                const logoData = await this.loadImage(businessData.businessLogoUrl);
+                if (logoData) {
+                    const logoSize = 25; // Appropriate size for header
+                    const logoX = this.pageWidth - this.margin - logoSize;
+                    const logoY = this.currentY;
+
+                    // Add logo with border
+                    this.doc.setLineWidth(0.5);
+                    this.doc.setDrawColor(200, 200, 200);
+                    this.doc.rect(logoX - 2, logoY - 2, logoSize + 4, logoSize + 4);
+                    
+                    this.doc.addImage(logoData, 'JPEG', logoX, logoY, logoSize, logoSize);
+                    logoAdded = true;
+                }
+            } catch (error) {
+                console.warn('Failed to load business logo:', error);
+            }
+        }
+
+        // Company name (left side)
         if (businessData.businessName) {
             this.setFont(this.fontSize.title, 'bold');
-            this.doc.text(businessData.businessName, this.margin, this.currentY);
-            this.currentY += 10;
+            const maxWidth = logoAdded ? this.pageWidth - (2 * this.margin) - 30 : this.pageWidth - (2 * this.margin);
+            const nameLines = this.doc.splitTextToSize(businessData.businessName, maxWidth);
+            for (let i = 0; i < nameLines.length; i++) {
+                this.doc.text(nameLines[i], this.margin, this.currentY);
+                this.currentY += 8;
+            }
+            this.currentY += 2;
         }
 
         // Contact information
         this.setFont(this.fontSize.small, 'normal');
+        const maxContactWidth = logoAdded ? this.pageWidth - (2 * this.margin) - 30 : this.pageWidth - (2 * this.margin);
 
         if (businessData.businessAddress) {
-            const addressLines = this.doc.splitTextToSize(businessData.businessAddress, this.pageWidth - (2 * this.margin));
+            const addressLines = this.doc.splitTextToSize(businessData.businessAddress, maxContactWidth);
             for (let i = 0; i < addressLines.length; i++) {
                 this.doc.text(addressLines[i], this.margin, this.currentY);
                 this.currentY += 5;
@@ -102,8 +133,18 @@ class MinimalPDFGenerator {
                 if (contactLine) contactLine += ' | ';
                 contactLine += 'Email: ' + businessData.businessEmail;
             }
-            this.doc.text(contactLine, this.margin, this.currentY);
-            this.currentY += 8;
+            
+            const contactLines = this.doc.splitTextToSize(contactLine, maxContactWidth);
+            for (let i = 0; i < contactLines.length; i++) {
+                this.doc.text(contactLines[i], this.margin, this.currentY);
+                this.currentY += 5;
+            }
+            this.currentY += 3;
+        }
+
+        // Ensure adequate spacing after header, especially when logo is present
+        if (logoAdded) {
+            this.currentY = Math.max(this.currentY, headerStartY + 30);
         }
 
         // Separator line
@@ -342,8 +383,8 @@ class MinimalPDFGenerator {
         this.currentY = currentY + 15;
     }
 
-    // Add simple footer
-    addSimpleFooter(notes = '') {
+    // Add simple footer with signature
+    async addSimpleFooter(notes = '', businessData = {}) {
         // Notes section
         if (notes && notes.trim()) {
             this.setFont(this.fontSize.normal, 'bold');
@@ -362,12 +403,43 @@ class MinimalPDFGenerator {
             this.currentY += 10;
         }
 
-        // Simple thank you message at bottom
-        const footerY = this.pageHeight - 30;
+        // Footer area
+        const footerY = this.pageHeight - 40;
+        let signatureAdded = false;
+
+        // Add signature at bottom right if URL provided
+        if (businessData.signatureUrl) {
+            try {
+                const signatureData = await this.loadImage(businessData.signatureUrl);
+                if (signatureData) {
+                    const signatureWidth = 30;
+                    const signatureHeight = 15;
+                    const signatureX = this.pageWidth - this.margin - signatureWidth;
+                    const signatureY = footerY - 5;
+
+                    // Add signature with subtle border
+                    this.doc.setLineWidth(0.3);
+                    this.doc.setDrawColor(220, 220, 220);
+                    this.doc.rect(signatureX - 1, signatureY - 1, signatureWidth + 2, signatureHeight + 2);
+                    
+                    this.doc.addImage(signatureData, 'JPEG', signatureX, signatureY, signatureWidth, signatureHeight);
+                    
+                    // Add "Authorized Signature" label below
+                    this.setFont(this.fontSize.small, 'normal');
+                    this.doc.text('Authorized Signature', signatureX, signatureY + signatureHeight + 5);
+                    signatureAdded = true;
+                }
+            } catch (error) {
+                console.warn('Failed to load signature image:', error);
+            }
+        }
+
+        // Thank you message at bottom center
         this.setFont(this.fontSize.normal, 'normal');
         const thankYou = 'Thank you for your business!';
         const textWidth = this.doc.getTextWidth(thankYou);
-        this.doc.text(thankYou, (this.pageWidth - textWidth) / 2, footerY);
+        const thankYouX = signatureAdded ? this.margin : (this.pageWidth - textWidth) / 2;
+        this.doc.text(thankYou, thankYouX, footerY + 10);
     }
 
     // Generate complete PDF
@@ -383,13 +455,13 @@ class MinimalPDFGenerator {
                 creator: 'Minimal PDF Generator'
             });
 
-            // Add sections
-            this.addSimpleHeader(documentData.business);
+            // Add sections (header and footer are now async)
+            await this.addSimpleHeader(documentData.business);
             this.addDocumentSection(documentData);
             this.addClientSection(documentData);
             this.addItemsTable(documentData.items, documentData.business.currency);
             this.addTotals(documentData.totals, documentData.business.currency);
-            this.addSimpleFooter(documentData.notes);
+            await this.addSimpleFooter(documentData.notes, documentData.business);
 
             // Add page numbers
             const pageCount = this.doc.internal.getNumberOfPages();
@@ -489,6 +561,36 @@ class MinimalPDFGenerator {
             });
             return `${symbol}${formatted}`;
         }
+    }
+
+    // Helper: Load image from URL
+    loadImage(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            img.onload = function() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    ctx.drawImage(img, 0, 0);
+                    const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataURL);
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            
+            img.onerror = function() {
+                reject(new Error('Failed to load image'));
+            };
+            
+            img.src = url;
+        });
     }
 
     // Helper: Format date
