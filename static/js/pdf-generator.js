@@ -816,7 +816,8 @@ function waitForJsPDF() {
 
 // Check if jsPDF is ready
 if (!waitForJsPDF()) {
-    let attempts = 0        const checkInterval = setInterval(() => {
+    let attempts = 0;
+    const checkInterval = setInterval(() => {
         attempts++;
         if (waitForJsPDF() || attempts > 50) {
             clearInterval(checkInterval);
