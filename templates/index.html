@@ -499,22 +499,17 @@
                                                         >
                                                     </div>
                                                     <div class="col-md-4">
-                                                        <div class="mb-2">
-                                                <small id="pdfGeneratorStatus" class="text-muted">
-                                                    <i class="fas fa-spinner fa-spin text-warning"></i> Loading PDF Generator...
-                                                </small>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                class="btn btn-primary w-100"
-                                                id="generatePDF"
-                                                disabled
-                                            >
-                                                <i
-                                                    class="fas fa-file-pdf me-2"
-                                                ></i
-                                                >Generate PDF
-                                            </button>
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-primary w-100"
+                                                            id="generatePDF"
+                                                            disabled
+                                                        >
+                                                            <i
+                                                                class="fas fa-file-pdf me-2"
+                                                            ></i
+                                                            >Generate PDF
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1298,6 +1293,14 @@
             });
 
             {% if session.user_id %}
+            // Listen for PDF generator ready event
+            window.addEventListener('pdfGeneratorReady', function() {
+                const generatePDFBtn = document.getElementById('generatePDF');
+                if (generatePDFBtn) {
+                    generatePDFBtn.disabled = false;
+                }
+            });
+
             // Load business settings
             function loadBusinessSettings() {
                 fetch('/api/get-public-settings')
