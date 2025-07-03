@@ -255,6 +255,46 @@ For production deployment, set these environment variables:
 - Service worker for background sync
 - Responsive design for all devices
 
+## 🌐 Network Access and Sharing
+
+### Local Network Access
+Your Flask application is configured to be accessible from other devices on your network:
+
+#### Configuration
+- **Host**: `0.0.0.0` (listens on all network interfaces)
+- **Port**: `5000` (accessible via http://YOUR_IP:5000)
+- **Network Scope**: Local network devices can access the application
+
+#### How Others Can Access
+1. **Find your computer's IP address**:
+   ```bash
+   # Windows
+   ipconfig
+   
+   # Look for your local IP (usually 192.168.x.x or 10.x.x.x)
+   ```
+
+2. **Share with others on your network**:
+   - Others can access via: `http://YOUR_IP_ADDRESS:5000`
+   - Example: `http://192.168.1.100:5000`
+
+#### Replit Network Access
+- **Public Access**: Your Replit app is accessible from anywhere on the internet
+- **Automatic URLs**: Replit provides public URLs for easy sharing
+- **No Configuration**: Network access is handled automatically
+
+#### Security Considerations
+- **Local Network**: Only devices on your WiFi/network can access locally
+- **Firewall**: Windows firewall may prompt for network permissions
+- **Replit**: Secure public access with built-in protections
+
+### Access Methods Summary
+| Method | Access Scope | Configuration Required |
+|--------|-------------|----------------------|
+| Localhost | Same computer only | None |
+| Local Network | Same WiFi/network | Allow firewall access |
+| Replit Public | Global internet | None (automatic) |
+
 ## 🔄 Backup and Recovery
 
 ### Automated Backups
