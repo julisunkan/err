@@ -1071,17 +1071,17 @@
 
         // Generate download code (admin only)
         function generateCode() {
-            fetch('/api/generate-code', {
+            fetch('/api/generate-bulk-codes', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({})
+                body: JSON.stringify({ quantity: 1 })
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    showNotification('Download code generated: ' + data.code, 'success');
+                if (data.success && data.codes && data.codes.length > 0) {
+                    showNotification('Download code generated: ' + data.codes[0].code, 'success');
                 } else {
                     showNotification(data.error || 'Failed to generate code', 'error');
                 }
