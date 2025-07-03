@@ -470,77 +470,136 @@
 
             <!-- Users Section -->
             <div id="users-section" class="content-section" style="display: none;">
-                <div class="content-card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-people me-2"></i>User Management</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-modern">
-                                <thead>
-                                    <tr>
-                                        <th>User</th>
-                                        <th>Email</th>
-                                        <th>Status</th>
-                                        <th>Joined</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for user in users %}
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-circle bg-primary text-white me-3">
-                                                    {{ user.first_name[0] }}{{ user.last_name[0] }}
-                                                </div>
-                                                <div>
-                                                    <div class="fw-semibold">{{ user.first_name }} {{ user.last_name }}</div>
-                                                    <div class="text-muted small">@{{ user.username }}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>{{ user.email }}</td>
-                                        <td>
-                                            {% if user.is_verified %}
-                                            <span class="badge badge-modern bg-success">Verified</span>
-                                            {% else %}
-                                            <span class="badge badge-modern bg-warning">Unverified</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="uploadForUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
-                                                    <i class="bi bi-upload"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-info" onclick="messageUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
-                                                    <i class="bi bi-envelope"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-secondary" onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.email }}', '{{ user.first_name }}', '{{ user.last_name }}')">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                {% if user.is_verified %}
-                                                <button class="btn btn-sm btn-outline-warning" onclick="toggleVerification({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}', false)">
-                                                    <i class="bi bi-shield-x"></i>
-                                                </button>
-                                                {% else %}
-                                                <button class="btn btn-sm btn-outline-success" onclick="toggleVerification({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}', true)">
-                                                    <i class="bi bi-shield-check"></i>
-                                                </button>
-                                                {% endif %}
-                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5><i class="fas fa-user-plus"></i> Create New User</h5>
+                            <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#createUserForm">
+                                <i class="fas fa-plus"></i> Add User
+                            </button>
+                        </div>
+                        <div class="collapse" id="createUserForm">
+                            <div class="card-body">
+                                <form id="adminCreateUserForm">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="newFirstName" class="form-label">First Name</label>
+                                            <input type="text" class="form-control" id="newFirstName" name="first_name" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="newLastName" class="form-label">Last Name</label>
+                                            <input type="text" class="form-control" id="newLastName" name="last_name" required>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="newUsername" class="form-label">Username</label>
+                                            <input type="text" class="form-control" id="newUsername" name="username" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="newEmail" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="newEmail" name="email" required>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="newPassword" class="form-label">Password</label>
+                                            <input type="password" class="form-control" id="newPassword" name="password" required minlength="6">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="newIsAdmin" class="form-label">User Type</label>
+                                            <select class="form-control" id="newIsAdmin" name="is_admin">
+                                                <option value="false">Regular User</option>
+                                                <option value="true">Administrator</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-user-plus"></i> Create User
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-users"></i> User Management</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-modern">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Email</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th>Joined</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for user in users %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-circle bg-primary text-white me-3">
+                                                        {{ user.first_name[0] }}{{ user.last_name[0] }}
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-semibold">{{ user.first_name }} {{ user.last_name }}</div>
+                                                        <div class="text-muted small">@{{ user.username }}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ user.email }}</td>
+                                            <td>
+                                                {% if user.is_admin %}
+                                                <span class="badge badge-modern bg-danger">Admin</span>
+                                                {% else %}
+                                                <span class="badge badge-modern bg-info">User</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if user.is_verified %}
+                                                <span class="badge badge-modern bg-success">Verified</span>
+                                                {% else %}
+                                                <span class="badge badge-modern bg-warning">Unverified</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="uploadForUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
+                                                        <i class="bi bi-upload"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-info" onclick="messageUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
+                                                        <i class="bi bi-envelope"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-secondary" onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.email }}', '{{ user.first_name }}', '{{ user.last_name }}')">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    {% if user.is_verified %}
+                                                    <button class="btn btn-sm btn-outline-warning" onclick="toggleVerification({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}', false)">
+                                                        <i class="bi bi-shield-x"></i>
+                                                    </button>
+                                                    {% else %}
+                                                    <button class="btn btn-sm btn-outline-success" onclick="toggleVerification({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}', true)">
+                                                        <i class="bi bi-shield-check"></i>
+                                                    </button>
+                                                    {% endif %}
+                                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
             </div>
 
             <!-- Requests Section -->
@@ -767,8 +826,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="editLastName" class="form-label">Last Name</label>
-                            <input type="text" class="form-control form-control-modern" id="editLastName" required>
-                        </div>
+                            <input type="text" class="form-control form-control-modern" id="editLastName" required                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -1090,25 +1148,78 @@
             }
         }
 
-        function deleteUser(userId, userName) {
-            if (confirm(`Are you sure you want to DELETE ${userName}? This action cannot be undone!`)) {
-                fetch(`/api/admin/delete-user/${userId}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showAlert(data.message, 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        showAlert(data.error, 'error');
+        // Function to delete user
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/delete-user/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
                     }
-                })
-                .catch(error => {
-                    showAlert('Delete failed: ' + error.message, 'error');
                 });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('User deleted successfully', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showAlert(result.error, 'danger');
+                }
+            } catch (error) {
+                showAlert('Error deleting user', 'danger');
+                console.error('Delete user error:', error);
             }
         }
+
+        // Handle admin user creation form
+        document.addEventListener('DOMContentLoaded', function() {
+            const createUserForm = document.getElementById('adminCreateUserForm');
+
+            if (createUserForm) {
+                createUserForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const formData = new FormData(this);
+                    const data = Object.fromEntries(formData);
+
+                    // Convert is_admin string to boolean
+                    data.is_admin = data.is_admin === 'true';
+
+                    try {
+                        const response = await fetch('/api/admin/register-user', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            showAlert('User created successfully!', 'success');
+                            createUserForm.reset();
+                            const createUserCollapse = document.getElementById('createUserForm');
+                            if (createUserCollapse) {
+                                const bsCollapse = new bootstrap.Collapse(createUserCollapse);
+                                bsCollapse.hide();
+                            }
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showAlert(result.error, 'danger');
+                        }
+                    } catch (error) {
+                        showAlert('An error occurred while creating the user.', 'danger');
+                        console.error('Create user error:', error);
+                    }
+                });
+            }
+        });
 
         // Request management
         function respondToRequest(requestId, status) {
@@ -1364,5 +1475,6 @@
             }
         });
     </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </body>
 </html>

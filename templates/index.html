@@ -87,11 +87,6 @@
                         <i class="fas fa-sign-in-alt me-2"></i>Login
                     </button>
                 </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">
-                        <i class="fas fa-user-plus me-2"></i>Register
-                    </button>
-                </li>
                 {% endif %}
                 {% if session.get('is_admin') %}
                 <li class="nav-item" role="presentation">
@@ -328,57 +323,6 @@
                 </div>
 
                 <!-- Register Tab -->
-                <div class="tab-pane fade" id="register" role="tabpanel">
-                    <div class="row justify-content-center">
-                        <div class="col-md-8">
-                            <div class="card">
-                                <div class="card-header text-center">
-                                    <h4><i class="fas fa-user-plus me-2"></i>Register</h4>
-                                </div>
-                                <div class="card-body">
-                                    <form id="registerForm">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="firstName" class="form-label">First Name</label>
-                                                    <input type="text" class="form-control" id="firstName" name="first_name" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="lastName" class="form-label">Last Name</label>
-                                                    <input type="text" class="form-control" id="lastName" name="last_name" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="registerUsername" class="form-label">Username</label>
-                                            <input type="text" class="form-control" id="registerUsername" name="username" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="registerEmail" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="registerEmail" name="email" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="registerPassword" class="form-label">Password</label>
-                                            <input type="password" class="form-control" id="registerPassword" name="password" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="confirmPassword" class="form-label">Confirm Password</label>
-                                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
-                                        </div>
-                                        <div class="d-grid">
-                                            <button type="submit" class="btn btn-success">Register</button>
-                                        </div>
-                                    </form>
-                                    <div class="text-center mt-3">
-                                        <p class="mb-0">Already have an account? <a href="#" onclick="switchTab('login-tab')">Login here</a></p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 {% endif %}
 
                 <!-- Download Codes Tab (Admin Only) -->
@@ -566,19 +510,17 @@
                 </div>
                 <div class="col-md-4 text-end">
                     <div class="small">
-                        <a href="/login" class="text-white text-decoration-none me-3">
-                            <i class="fas fa-sign-in-alt me-1"></i>Login
-                        </a>
-                        <a href="/register" class="text-white text-decoration-none">
-                            <i class="fas fa-user-plus me-1"></i>Register
-                        </a>
+                        <a href="{{ url_for('login') }}" class="btn btn-primary me-2">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
+                            <span class="text-muted">Need an account? Contact your administrator.</span>
                     </div>
                 </div>
             </div>
         </div>
     </footer>
 
-    
+
                         </div>
                         </form>
                 </div>
@@ -857,6 +799,7 @@
         }
 
         // Remove item row
+```text
         function removeItem(button) {
             const container = document.getElementById('itemsContainer');
             if (container.children.length > 1) {

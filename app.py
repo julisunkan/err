@@ -133,10 +133,11 @@ def debug_admin():
     except Exception as e:
         return f"<h1>Database Error</h1><p>{str(e)}</p>"
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    """User registration"""
-    if request.method == 'POST':
+@app.route('/api/admin/register-user', methods=['POST'])
+@admin_required
+def admin_register_user():
+    """Admin-only user registration"""
+    try:
         data = request.get_json()
 
         # Validate input
@@ -158,7 +159,8 @@ def register():
             email=data['email'],
             first_name=data['first_name'],
             last_name=data['last_name'],
-            is_verified=True  # Auto-verify users
+            is_verified=True,  # Auto-verify users created by admin
+            is_admin=data.get('is_admin', False)  # Allow admin to create other admins
         )
         user.set_password(data['password'])
 
@@ -166,14 +168,18 @@ def register():
         db.session.commit()
 
         # Log registration activity
-        log_activity(user.id, 'registration', f"User {user.username} registered successfully", request.remote_addr, request.user_agent.string)
+        admin_user = User.query.get(session['user_id'])
+        log_activity(session['user_id'], 'admin_user_creation', f"Admin {admin_user.username} created user {user.username}", request.remote_addr, request.user_agent.string)
 
         return jsonify({
             'success': True, 
-            'message': 'Registration successful! You can now log in.'
+            'message': 'User created successfully!',
+            'user_id': user.id
         })
 
-    return render_template('auth/register.html')
+    except Exception as e:
+        logging.error(f"Error creating user: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to create user'}), 500
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -298,7 +304,9 @@ def dashboard():
 @admin_required
 def admin_dashboard():
     """Admin dashboard"""
-    users = User.query.filter_by(is_admin=False).order_by(User.created_at.desc()).all()
+    # Show all users except the current admin user
+    current_admin_id = session['user_id']
+    users = User.query.filter(User.id != current_admin_id).order_by(User.created_at.desc()).all()
     pending_requests = PDFRequest.query.filter_by(status='pending').order_by(PDFRequest.created_at.desc()).all()
     recent_uploads = UserPDFCode.query.order_by(UserPDFCode.uploaded_at.desc()).limit(10).all()
 
