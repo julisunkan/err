@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +7,7 @@
     <title>Business Documents Generator</title>
 
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#007bff">
+    <meta name="theme-color" content="#2c3e50">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Business Docs">
@@ -52,241 +53,514 @@
         <!-- Notification container -->
         <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 1050;"></div>
 
-        <!-- Navigation Header -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-            <div class="container">
-                <a class="navbar-brand" href="#">
-                    <i class="fas fa-file-invoice me-2"></i>Business Documents Generator
-                </a>
-                <div class="navbar-nav ms-auto">
-                    {% if session.user_id %}
+        {% if session.user_id %}
+            <!-- Logged in user - Show document generator with navigation -->
+            <!-- Navigation Header -->
+            <nav class="navbar navbar-expand-lg navbar-dark app-header mb-4">
+                <div class="container">
+                    <a class="navbar-brand" href="#">
+                        <i class="fas fa-file-invoice me-2"></i>Business Documents Generator
+                    </a>
+                    <div class="navbar-nav ms-auto">
                         <span class="navbar-text me-3">Welcome, {{ session.username }}!</span>
                         {% if session.is_admin %}
-                            <a class="nav-link" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+                            <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                                <i class="fas fa-cog me-1"></i>Admin Dashboard
+                            </a>
                         {% else %}
-                            <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                            <a class="nav-link" href="{{ url_for('dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                            </a>
                         {% endif %}
-                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content with Tabs for logged in users -->
+            <div class="container">
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="generator-tab" data-bs-toggle="tab" data-bs-target="#generator" type="button" role="tab">
+                            <i class="fas fa-file-alt me-2"></i>Document Generator
+                        </button>
+                    </li>
+                    {% if session.get('is_admin') %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="codes-tab" data-bs-toggle="tab" data-bs-target="#codes" type="button" role="tab">
+                            <i class="fas fa-key me-2"></i>Download Codes
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
+                            <i class="fas fa-cog me-2"></i>Business Settings
+                        </button>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="mainTabsContent">
+                    <!-- Document Generator Tab -->
+                    <div class="tab-pane fade show active" id="generator" role="tabpanel">
+                        <div class="row">
+                            <!-- Left Column - Document Form -->
+                            <div class="col-lg-6">
+                                <div class="card document-card">
+                                    <div class="card-header app-card-header">
+                                        <h5 class="card-title mb-0"><i class="fas fa-edit me-2"></i>Create Document</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="documentForm">
+                                            <!-- Document Type -->
+                                            <div class="mb-3">
+                                                <label for="documentType" class="form-label">Document Type</label>
+                                                <select class="form-select" id="documentType" name="documentType">
+                                                    <option value="invoice">Invoice</option>
+                                                    <option value="quotation">Quotation</option>
+                                                    <option value="purchase_order">Purchase Order</option>
+                                                    <option value="receipt">Receipt</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Document Number -->
+                                            <div class="mb-3">
+                                                <label for="documentNumber" class="form-label">Document Number</label>
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" id="documentNumber" required>
+                                                    <button type="button" class="btn btn-outline-secondary" onclick="generateDocumentNumber()" title="Generate New Number">
+                                                        <i class="fas fa-sync-alt"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="form-text">Click the refresh button to generate a different format</div>
+                                            </div>
+
+                                            <!-- Date -->
+                                            <div class="mb-3">
+                                                <label for="documentDate" class="form-label">Date</label>
+                                                <input type="date" class="form-control" id="documentDate" name="documentDate">
+                                            </div>
+
+                                            <!-- Client Information -->
+                                            <h6 class="mb-3 text-primary">Client Information</h6>
+                                            <div class="mb-3">
+                                                <label for="clientName" class="form-label">Client Name</label>
+                                                <input type="text" class="form-control" id="clientName" name="clientName" placeholder="Enter client name">
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="clientAddress" class="form-label">Client Address</label>
+                                                <textarea class="form-control" id="clientAddress" name="clientAddress" rows="2" placeholder="Enter client address"></textarea>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="clientEmail" class="form-label">Email</label>
+                                                        <input type="email" class="form-control" id="clientEmail" name="clientEmail" placeholder="client@example.com">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="clientPhone" class="form-label">Phone</label>
+                                                        <input type="tel" class="form-control" id="clientPhone" name="clientPhone" placeholder="+1 (555) 123-4567">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Items Section -->
+                                            <h6 class="mb-3 text-primary">Items</h6>
+                                            <div id="itemsContainer">
+                                                <div class="item-row border rounded p-3 mb-3">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="mb-2">
+                                                                <label class="form-label">Description</label>
+                                                                <input type="text" class="form-control item-description" placeholder="Item description">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <div class="mb-2">
+                                                                <label class="form-label">Qty</label>
+                                                                <input type="number" class="form-control item-quantity" value="1" min="1">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <div class="mb-2">
+                                                                <label class="form-label">Price</label>
+                                                                <input type="number" class="form-control item-price" step="0.01" min="0">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <div class="mb-2">
+                                                                <label class="form-label">Total</label>
+                                                                <input type="text" class="form-control item-total" readonly>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" class="btn btn-sm btn-danger remove-item">Remove</button>
+                                                </div>
+                                            </div>
+
+                                            <button type="button" class="btn btn-outline-primary mb-3" id="addItem">
+                                                <i class="fas fa-plus me-1"></i>Add Item
+                                            </button>
+
+                                            <!-- Totals -->
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="notes" class="form-label">Notes</label>
+                                                        <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Additional notes or terms"></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="border rounded p-3 totals-section">
+                                                        <div class="d-flex justify-content-between mb-2">
+                                                            <span>Subtotal:</span>
+                                                            <span id="subtotal">$0.00</span>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between mb-2">
+                                                            <span>Tax:</span>
+                                                            <span id="tax">$0.00</span>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between fw-bold">
+                                                            <span>Total:</span>
+                                                            <span id="total">$0.00</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Action Buttons -->
+                                            <div class="mt-4">
+                                                <div class="row">
+                                                    <div class="col-md-8">
+                                                        <div class="input-group">
+                                                            <input type="text" class="form-control" id="pdfDownloadCode" placeholder="Enter download code" maxlength="8" style="text-transform: uppercase;">
+                                                            <button type="button" class="btn btn-outline-secondary" id="verifyCodeBtn">
+                                                                <i class="fas fa-check me-1"></i>Verify
+                                                            </button>
+                                                        </div>
+                                                        <small class="text-muted">Enter your 8-character download code to generate PDF</small>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <button type="button" class="btn btn-primary w-100" id="generatePDF" disabled>
+                                                            <i class="fas fa-file-pdf me-2"></i>Generate PDF
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Column - Live Preview -->
+                            <div class="col-lg-6">
+                                <div class="card document-card">
+                                    <div class="card-header app-card-header">
+                                        <h5 class="card-title mb-0"><i class="fas fa-eye me-2"></i>Live Preview</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="documentPreview" class="border rounded p-4 bg-white preview-area" style="min-height: 600px;">
+                                            <div class="text-center text-muted">
+                                                <i class="fas fa-file-alt fa-3x mb-3"></i>
+                                                <p>Fill in the form to see a live preview of your document</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Download Codes Tab (Admin Only) -->
+                    {% if session.get('is_admin') %}
+                    <div class="tab-pane fade" id="codes" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card document-card">
+                                    <div class="card-header app-card-header">
+                                        <h5 class="card-title mb-0"><i class="fas fa-download me-2"></i>Download with Code</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="downloadForm">
+                                            <div class="mb-3">
+                                                <label for="downloadCode" class="form-label">Enter Download Code</label>
+                                                <input type="text" class="form-control" id="downloadCode" name="code" placeholder="Enter your 8-character code" maxlength="8" style="text-transform: uppercase;">
+                                            </div>
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-download me-2"></i>Verify & Download
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card document-card">
+                                    <div class="card-header app-card-header">
+                                        <h5 class="card-title mb-0"><i class="fas fa-key me-2"></i>Generate Code</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="text-muted">Generate a one-time download code for your document.</p>
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-outline-primary" id="generateCode">
+                                                <i class="fas fa-key me-2"></i>Generate Download Code
+                                            </button>
+                                            <a href="{{ url_for('code_generator') }}" class="btn btn-outline-secondary" target="_blank">
+                                                <i class="fas fa-external-link-alt me-2"></i>Advanced Code Generator
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Business Settings Tab (Admin Only) -->
+                    <div class="tab-pane fade" id="settings" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="card document-card">
+                                    <div class="card-header app-card-header">
+                                        <h5 class="card-title mb-0"><i class="fas fa-building me-2"></i>Global Business Settings</h5>
+                                        <small class="text-muted">These settings will be used for all generated documents</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="settingsForm">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="businessName" class="form-label">Business Name</label>
+                                                        <input type="text" class="form-control" id="businessName" name="businessName" required>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="businessEmail" class="form-label">Business Email</label>
+                                                        <input type="email" class="form-control" id="businessEmail" name="businessEmail" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="businessAddress" class="form-label">Business Address</label>
+                                                <textarea class="form-control" id="businessAddress" name="businessAddress" rows="3" required></textarea>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="businessPhone" class="form-label">Business Phone</label>
+                                                        <input type="tel" class="form-control" id="businessPhone" name="businessPhone" required>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="currency" class="form-label">Currency</label>
+                                                        <select class="form-select" id="currency" name="currency">
+                                                            <option value="USD">USD ($)</option>
+                                                            <option value="EUR">EUR (€)</option>
+                                                            <option value="GBP">GBP (£)</option>
+                                                            <option value="NGN">NGN (₦)</option>
+                                                            <option value="CAD">CAD ($)</option>
+                                                            <option value="AUD">AUD ($)</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="businessLogoUrl" class="form-label">Business Logo URL</label>
+                                                        <input type="url" class="form-control" id="businessLogoUrl" name="businessLogoUrl" placeholder="https://example.com/logo.png">
+                                                        <div class="form-text">URL to your business logo image</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="signatureUrl" class="form-label">Signature URL</label>
+                                                        <input type="url" class="form-control" id="signatureUrl" name="signatureUrl" placeholder="https://example.com/signature.png">
+                                                        <div class="form-text">URL to your signature image</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="taxRate" class="form-label">Default Tax Rate (%)</label>
+                                                <input type="number" class="form-control" id="taxRate" name="taxRate" step="0.1" min="0" max="100">
+                                                <div class="form-text">Default tax rate for all documents</div>
+                                            </div>
+                                            <div class="d-grid gap-2">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-save me-2"></i>Save Business Settings
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card document-card">
+                                    <div class="card-header app-card-header">
+                                        <h5 class="card-title mb-0">Settings Management</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-outline-success" id="exportBusinessSettings">
+                                                <i class="fas fa-download me-2"></i>Export Business Settings
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info" id="importBusinessSettings">
+                                                <i class="fas fa-upload me-2"></i>Import Business Settings
+                                            </button>
+                                            <input type="file" id="importBusinessFileInput" accept=".json" style="display: none;">
+                                            <hr>
+                                            <button type="button" class="btn btn-outline-warning" onclick="resetToDefaults()">
+                                                <i class="fas fa-undo me-2"></i>Reset to Defaults
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card document-card mt-3">
+                                    <div class="card-header app-card-header">
+                                        <h6 class="card-title mb-0">Preview</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="settingsPreview" class="small">
+                                            <div class="text-muted">Business settings preview will appear here</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
             </div>
-        </nav>
 
-        <!-- Main Content with Tabs -->
-        <div class="container">
-            <!-- Tab Navigation -->
-            <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="generator-tab" data-bs-toggle="tab" data-bs-target="#generator" type="button" role="tab">
-                        <i class="fas fa-file-alt me-2"></i>Document Generator
-                    </button>
-                </li>
-                {% if not session.user_id %}
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab">
-                        <i class="fas fa-sign-in-alt me-2"></i>Login
-                    </button>
-                </li>
-                {% endif %}
-                {% if session.get('is_admin') %}
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="codes-tab" data-bs-toggle="tab" data-bs-target="#codes" type="button" role="tab">
-                        <i class="fas fa-key me-2"></i>Download Codes
-                    </button>
-                </li>
-                {% endif %}
-                {% if session.get('is_admin') %}
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
-                        <i class="fas fa-cog me-2"></i>Business Settings
-                    </button>
-                </li>
-                {% endif %}
-            </ul>
+        {% else %}
+            <!-- Not logged in - Show beautiful login page -->
+            <div class="login-container">
+                <!-- Header for login page -->
+                <nav class="navbar navbar-expand-lg navbar-dark app-header">
+                    <div class="container">
+                        <a class="navbar-brand mx-auto" href="#">
+                            <i class="fas fa-file-invoice me-2"></i>Business Documents Generator
+                        </a>
+                    </div>
+                </nav>
 
-            <!-- Tab Content -->
-            <div class="tab-content" id="mainTabsContent">
-                <!-- Document Generator Tab -->
-                <div class="tab-pane fade show active" id="generator" role="tabpanel">
-                    <div class="row">
-                        <!-- Left Column - Document Form -->
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0">Create Document</h5>
-                                </div>
-                                <div class="card-body">
-                                    <form id="documentForm">
-                                        <!-- Document Type -->
-                                        <div class="mb-3">
-                                            <label for="documentType" class="form-label">Document Type</label>
-                                            <select class="form-select" id="documentType" name="documentType">
-                                                <option value="invoice">Invoice</option>
-                                                <option value="quotation">Quotation</option>
-                                                <option value="purchase_order">Purchase Order</option>
-                                                <option value="receipt">Receipt</option>
-                                            </select>
-                                        </div>
-
-                                        <!-- Document Number -->
-                                        <div class="mb-3">
-                                            <label for="documentNumber" class="form-label">Document Number</label>
-                                            <div class="input-group">
-                                                <input type="text" class="form-control" id="documentNumber" required>
-                                                <button type="button" class="btn btn-outline-secondary" onclick="generateDocumentNumber()" title="Generate New Number">
-                                                    <i class="fas fa-sync-alt"></i>
-                                                </button>
-                                            </div>
-                                            <div class="form-text">Click the refresh button to generate a different format</div>
-                                        </div>
-
-                                        <!-- Date -->
-                                        <div class="mb-3">
-                                            <label for="documentDate" class="form-label">Date</label>
-                                            <input type="date" class="form-control" id="documentDate" name="documentDate">
-                                        </div>
-
-                                        <!-- Client Information -->
-                                        <h6 class="mb-3">Client Information</h6>
-                                        <div class="mb-3">
-                                            <label for="clientName" class="form-label">Client Name</label>
-                                            <input type="text" class="form-control" id="clientName" name="clientName" placeholder="Enter client name">
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label for="clientAddress" class="form-label">Client Address</label>
-                                            <textarea class="form-control" id="clientAddress" name="clientAddress" rows="2" placeholder="Enter client address"></textarea>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="clientEmail" class="form-label">Email</label>
-                                                    <input type="email" class="form-control" id="clientEmail" name="clientEmail" placeholder="client@example.com">
+                <!-- Login Content -->
+                <div class="login-content">
+                    <div class="container">
+                        <div class="row justify-content-center align-items-center min-vh-100">
+                            <div class="col-lg-10">
+                                <div class="row">
+                                    <!-- Left side - Features -->
+                                    <div class="col-lg-6 d-none d-lg-flex align-items-center">
+                                        <div class="features-section text-white">
+                                            <h2 class="mb-4">
+                                                <i class="fas fa-rocket me-3"></i>
+                                                Professional Business Documents
+                                            </h2>
+                                            <div class="feature-list">
+                                                <div class="feature-item mb-4">
+                                                    <div class="feature-icon">
+                                                        <i class="fas fa-file-invoice"></i>
+                                                    </div>
+                                                    <div class="feature-content">
+                                                        <h5>Generate Invoices</h5>
+                                                        <p>Create professional invoices with automated calculations and your business branding.</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="clientPhone" class="form-label">Phone</label>
-                                                    <input type="tel" class="form-control" id="clientPhone" name="clientPhone" placeholder="+1 (555) 123-4567">
+                                                <div class="feature-item mb-4">
+                                                    <div class="feature-icon">
+                                                        <i class="fas fa-quote-left"></i>
+                                                    </div>
+                                                    <div class="feature-content">
+                                                        <h5>Price Quotations</h5>
+                                                        <p>Send detailed quotations to clients with itemized pricing and terms.</p>
+                                                    </div>
+                                                </div>
+                                                <div class="feature-item mb-4">
+                                                    <div class="feature-icon">
+                                                        <i class="fas fa-receipt"></i>
+                                                    </div>
+                                                    <div class="feature-content">
+                                                        <h5>Receipts & Orders</h5>
+                                                        <p>Generate receipts and purchase orders with secure PDF downloads.</p>
+                                                    </div>
+                                                </div>
+                                                <div class="feature-item">
+                                                    <div class="feature-icon">
+                                                        <i class="fas fa-shield-alt"></i>
+                                                    </div>
+                                                    <div class="feature-content">
+                                                        <h5>Secure & Professional</h5>
+                                                        <p>Your documents are generated securely with professional layouts and branding.</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <!-- Guest Currency Selection (only show if not logged in) -->
-                                        {% if not session.user_id %}
-                                        <div class="mb-3">
-                                            <label for="guestCurrency" class="form-label">Currency</label>
-                                            <select class="form-select" id="guestCurrency">
-                                                <option value="USD">USD ($)</option>
-                                                <option value="EUR">EUR (€)</option>
-                                                <option value="GBP">GBP (£)</option>
-                                                <option value="NGN">NGN (₦)</option>
-                                                <option value="CAD">CAD ($)</option>
-                                                <option value="AUD">AUD ($)</option>
-                                            </select>
-                                        </div>
-                                        {% endif %}
-
-                                        <!-- Items Section -->
-                                        <h6 class="mb-3">Items</h6>
-                                        <div id="itemsContainer">
-                                            <div class="item-row border rounded p-3 mb-3">
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="mb-2">
-                                                            <label class="form-label">Description</label>
-                                                            <input type="text" class="form-control item-description" placeholder="Item description">
+                                    <!-- Right side - Login Form -->
+                                    <div class="col-lg-6">
+                                        <div class="login-form-container">
+                                            <div class="card login-card shadow-lg">
+                                                <div class="card-body p-5">
+                                                    <div class="text-center mb-4">
+                                                        <div class="login-icon mb-3">
+                                                            <i class="fas fa-user-circle fa-4x text-primary"></i>
                                                         </div>
+                                                        <h3 class="card-title">Welcome Back</h3>
+                                                        <p class="text-muted">Sign in to create professional business documents</p>
                                                     </div>
-                                                    <div class="col-md-2">
-                                                        <div class="mb-2">
-                                                            <label class="form-label">Qty</label>
-                                                            <input type="number" class="form-control item-quantity" value="1" min="1">
+
+                                                    <div id="login-alert-container"></div>
+
+                                                    <form id="loginForm">
+                                                        <div class="mb-4">
+                                                            <label for="loginUsername" class="form-label">Username</label>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text">
+                                                                    <i class="fas fa-user"></i>
+                                                                </span>
+                                                                <input type="text" class="form-control form-control-lg" id="loginUsername" name="username" required placeholder="Enter your username">
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <div class="mb-2">
-                                                            <label class="form-label">Price</label>
-                                                            <input type="number" class="form-control item-price" step="0.01" min="0">
+
+                                                        <div class="mb-4">
+                                                            <label for="loginPassword" class="form-label">Password</label>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text">
+                                                                    <i class="fas fa-lock"></i>
+                                                                </span>
+                                                                <input type="password" class="form-control form-control-lg" id="loginPassword" name="password" required placeholder="Enter your password">
+                                                                <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <div class="mb-2">
-                                                            <label class="form-label">Total</label>
-                                                            <input type="text" class="form-control item-total" readonly>
+
+                                                        <div class="d-grid mb-4">
+                                                            <button type="submit" class="btn btn-primary btn-lg">
+                                                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                                                            </button>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                                <button type="button" class="btn btn-sm btn-danger remove-item">Remove</button>
-                                            </div>
-                                        </div>
+                                                    </form>
 
-                                        <button type="button" class="btn btn-outline-primary mb-3" id="addItem">
-                                            <i class="fas fa-plus me-1"></i>Add Item
-                                        </button>
-
-                                        <!-- Totals -->
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="notes" class="form-label">Notes</label>
-                                                    <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Additional notes or terms"></textarea>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="border rounded p-3">
-                                                    <div class="d-flex justify-content-between mb-2">
-                                                        <span>Subtotal:</span>
-                                                        <span id="subtotal">$0.00</span>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between mb-2">
-                                                        <span>Tax:</span>
-                                                        <span id="tax">$0.00</span>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between fw-bold">
-                                                        <span>Total:</span>
-                                                        <span id="total">$0.00</span>
+                                                    <div class="text-center">
+                                                        <p class="mb-0 text-muted">
+                                                            <i class="fas fa-info-circle me-1"></i>
+                                                            Need an account? Contact your administrator.
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <!-- Action Buttons -->
-                                        <div class="mt-4">
-                                            <div class="row">
-                                                <div class="col-md-8">
-                                                    <div class="input-group">
-                                                        <input type="text" class="form-control" id="pdfDownloadCode" placeholder="Enter download code" maxlength="8" style="text-transform: uppercase;">
-                                                        <button type="button" class="btn btn-outline-secondary" id="verifyCodeBtn">
-                                                            <i class="fas fa-check me-1"></i>Verify
-                                                        </button>
-                                                    </div>
-                                                    <small class="text-muted">Enter your 8-character download code to generate PDF</small>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <button type="button" class="btn btn-primary w-100" id="generatePDF" disabled>
-                                                        <i class="fas fa-file-pdf me-2"></i>Generate PDF
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right Column - Live Preview -->
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0">Live Preview</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div id="documentPreview" class="border rounded p-4 bg-white" style="min-height: 600px;">
-                                        <div class="text-center text-muted">
-                                            <i class="fas fa-file-alt fa-3x mb-3"></i>
-                                            <p>Fill in the form to see a live preview of your document</p>
                                         </div>
                                     </div>
                                 </div>
@@ -294,215 +568,17 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Login Tab -->
-                {% if not session.user_id %}
-                <div class="tab-pane fade" id="login" role="tabpanel">
-                    <div class="row justify-content-center">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header text-center">
-                                    <h4><i class="fas fa-sign-in-alt me-2"></i>Login</h4>
-                                </div>
-                                <div class="card-body">
-                                    <div id="login-alert-container"></div>
-                                    <form id="loginForm">
-                                        <div class="mb-3">
-                                            <label for="loginUsername" class="form-label">Username</label>
-                                            <input type="text" class="form-control" id="loginUsername" name="username" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="loginPassword" class="form-label">Password</label>
-                                            <input type="password" class="form-control" id="loginPassword" name="password" required>
-                                        </div>
-                                        <div class="d-grid">
-                                            <button type="submit" class="btn btn-primary">Login</button>
-                                        </div>
-                                    </form>
-                                    <div class="text-center mt-3">
-                                        <p class="mb-1">Need an account? Contact your administrator.</p>
-                                        <p class="text-muted mt-2"><small></small></p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Download Codes Tab (Admin Only) -->
-                {% if session.get('is_admin') %}
-                <div class="tab-pane fade" id="codes" role="tabpanel">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0">Download with Code</h5>
-                                </div>
-                                <div class="card-body">
-                                    <form id="downloadForm">
-                                        <div class="mb-3">
-                                            <label for="downloadCode" class="form-label">Enter Download Code</label>
-                                            <input type="text" class="form-control" id="downloadCode" name="code" placeholder="Enter your 8-character code" maxlength="8" style="text-transform: uppercase;">
-                                        </div>
-                                        <div class="d-grid">
-                                            <button type="submit" class="btn btn-primary">
-                                                <i class="fas fa-download me-2"></i>Verify & Download
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0">Generate Code</h5>
-                                </div>
-                                <div class="card-body">
-                                    <p class="text-muted">Generate a one-time download code for your document.</p>
-                                    <div class="d-grid gap-2">
-                                        <button type="button" class="btn btn-outline-primary" id="generateCode">
-                                            <i class="fas fa-key me-2"></i>Generate Download Code
-                                        </button>
-                                        <a href="{{ url_for('code_generator') }}" class="btn btn-outline-secondary" target="_blank">
-                                            <i class="fas fa-external-link-alt me-2"></i>Advanced Code Generator
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Business Settings Tab (Admin Only) -->
-                {% if session.get('is_admin') %}
-                <div class="tab-pane fade" id="settings" role="tabpanel">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0"><i class="fas fa-building me-2"></i>Global Business Settings</h5>
-                                    <small class="text-muted">These settings will be used for all generated documents</small>
-                                </div>
-                                <div class="card-body">
-                                    <form id="settingsForm">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="businessName" class="form-label">Business Name</label>
-                                                    <input type="text" class="form-control" id="businessName" name="businessName" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="businessEmail" class="form-label">Business Email</label>
-                                                    <input type="email" class="form-control" id="businessEmail" name="businessEmail" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="businessAddress" class="form-label">Business Address</label>
-                                            <textarea class="form-control" id="businessAddress" name="businessAddress" rows="3" required></textarea>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="businessPhone" class="form-label">Business Phone</label>
-                                                    <input type="tel" class="form-control" id="businessPhone" name="businessPhone" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="currency" class="form-label">Currency</label>
-                                                    <select class="form-select" id="currency" name="currency">
-                                                        <option value="USD">USD ($)</option>
-                                                        <option value="EUR">EUR (€)</option>
-                                                        <option value="GBP">GBP (£)</option>
-                                                        <option value="NGN">NGN (₦)</option>
-                                                        <option value="CAD">CAD ($)</option>
-                                                        <option value="AUD">AUD ($)</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="businessLogoUrl" class="form-label">Business Logo URL</label>
-                                                    <input type="url" class="form-control" id="businessLogoUrl" name="businessLogoUrl" placeholder="https://example.com/logo.png">
-                                                    <div class="form-text">URL to your business logo image</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="signatureUrl" class="form-label">Signature URL</label>
-                                                    <input type="url" class="form-control" id="signatureUrl" name="signatureUrl" placeholder="https://example.com/signature.png">
-                                                    <div class="form-text">URL to your signature image</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="taxRate" class="form-label">Default Tax Rate (%)</label>
-                                            <input type="number" class="form-control" id="taxRate" name="taxRate" step="0.1" min="0" max="100">
-                                            <div class="form-text">Default tax rate for all documents</div>
-                                        </div>
-                                        <div class="d-grid gap-2">
-                                            <button type="submit" class="btn btn-primary">
-                                                <i class="fas fa-save me-2"></i>Save Business Settings
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0">Settings Management</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-grid gap-2">
-                                        <button type="button" class="btn btn-outline-success" id="exportBusinessSettings">
-                                            <i class="fas fa-download me-2"></i>Export Business Settings
-                                        </button>
-                                        <button type="button" class="btn btn-outline-info" id="importBusinessSettings">
-                                            <i class="fas fa-upload me-2"></i>Import Business Settings
-                                        </button>
-                                        <input type="file" id="importBusinessFileInput" accept=".json" style="display: none;">
-                                        <hr>
-                                        <button type="button" class="btn btn-outline-warning" onclick="resetToDefaults()">
-                                            <i class="fas fa-undo me-2"></i>Reset to Defaults
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card mt-3">
-                                <div class="card-header">
-                                    <h6 class="card-title mb-0">Preview</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div id="settingsPreview" class="small">
-                                        <div class="text-muted">Business settings preview will appear here</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
             </div>
-        </div>
+        {% endif %}
     </div>
 
-    <!-- Colorful Footer -->
-    <footer class="mt-5" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
-        <div class="container py-4">
+    <!-- Footer with consistent styling -->
+    <footer class="app-footer">
+        <div class="container">
             <div class="row">
                 <div class="col-md-4">
                     <h6><i class="fas fa-file-pdf me-2"></i>Document Generator</h6>
-                    <p class="small">Create professional business documents with ease. Invoices, quotes, receipts and more.</p>
+                    <p class="small mb-0">Create professional business documents with ease. Invoices, quotes, receipts and more.</p>
                 </div>
                 <div class="col-md-4">
                     <h6><i class="fas fa-rocket me-2"></i>Features</h6>
@@ -528,20 +604,21 @@
                     </div>
                 </div>
             </div>
-            <hr class="my-3" style="border-color: rgba(255,255,255,0.2);">
+            <hr class="my-3 footer-divider">
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <p class="mb-0 small">&copy; 2025 Business Documents Generator. All rights reserved.</p>
                 </div>
                 <div class="col-md-4 text-end">
-                    <div class="small">
-                        {% if not session.user_id %}
-                            <a href="{{ url_for('login') }}" class="btn btn-primary me-2">
-                                <i class="fas fa-sign-in-alt"></i> Login
-                            </a>
-                            <span class="text-muted">Need an account? Contact your administrator.</span>
-                        {% endif %}
-                    </div>
+                    {% if session.user_id %}
+                        <span class="text-light small">
+                            <i class="fas fa-user me-1"></i>Logged in as {{ session.username }}
+                        </span>
+                    {% else %}
+                        <span class="text-light small">
+                            <i class="fas fa-lock me-1"></i>Secure Business Platform
+                        </span>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -584,21 +661,27 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Document loaded, initializing...');
 
-            // Load business settings
-            loadBusinessSettings();
+            {% if session.user_id %}
+                // Load business settings only for logged in users
+                loadBusinessSettings();
 
-            // Set default values
-            document.getElementById('documentDate').value = new Date().toISOString().split('T')[0];
-            generateDocumentNumber();
+                // Set default values
+                document.getElementById('documentDate').value = new Date().toISOString().split('T')[0];
+                generateDocumentNumber();
 
-            // Add event listeners
-            setupEventListeners();
+                // Add event listeners for document generator
+                setupEventListeners();
 
-            // Initialize first item calculations
-            calculateTotals();
-            updatePreview();
+                // Initialize first item calculations
+                calculateTotals();
+                updatePreview();
+            {% else %}
+                // Setup login form listeners for non-logged in users
+                setupLoginListeners();
+            {% endif %}
         });
 
+        {% if session.user_id %}
         // Load business settings
         function loadBusinessSettings() {
             fetch('/api/get-public-settings')
@@ -642,7 +725,7 @@
             });
         }
 
-        // Setup all event listeners
+        // Setup all event listeners for document generator
         function setupEventListeners() {
             // Document form changes
             const formInputs = document.querySelectorAll('#documentForm input, #documentForm select, #documentForm textarea');
@@ -691,12 +774,6 @@
                 downloadForm.addEventListener('submit', handleDownload);
             }
 
-            // Login form
-            const loginForm = document.getElementById('loginForm');
-            if (loginForm) {
-                loginForm.addEventListener('submit', handleLogin);
-            }
-
             // PDF Download code input formatting
             const pdfDownloadCodeInput = document.getElementById('pdfDownloadCode');
             if (pdfDownloadCodeInput) {
@@ -736,22 +813,81 @@
                 });
             }
 
-            // Guest currency selection
-            const guestCurrencySelect = document.getElementById('guestCurrency');
-            if (guestCurrencySelect) {
-                guestCurrencySelect.addEventListener('change', function(e) {
-                    businessSettings.currency = e.target.value;
-                    calculateTotals();
-                    updatePreview();
-                });
-            }
-
             const importInput = document.getElementById('importBusinessFileInput');
             if (importInput) {
                 importInput.addEventListener('change', importBusinessSettings);
             }
         }
+        {% endif %}
 
+        // Setup login form listeners
+        function setupLoginListeners() {
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+
+            const togglePassword = document.getElementById('togglePassword');
+            if (togglePassword) {
+                togglePassword.addEventListener('click', function() {
+                    const passwordInput = document.getElementById('loginPassword');
+                    const icon = this.querySelector('i');
+
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    } else {
+                        passwordInput.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                });
+            }
+        }
+
+        // Handle login
+        function handleLogin(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showLoginAlert('Login successful! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = result.redirect || '/';
+                    }, 1000);
+                } else {
+                    showLoginAlert(result.error, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                showLoginAlert('Login failed. Please try again.', 'danger');
+            });
+        }
+
+        // Show login alert (specific to login form)
+        function showLoginAlert(message, type) {
+            const container = document.getElementById('login-alert-container');
+            if (container) {
+                container.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                    message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>';
+            }
+        }
+
+        {% if session.user_id %}
         // Generate document number with different formats per document type
         function generateDocumentNumber() {
             const type = document.getElementById('documentType').value;
@@ -767,7 +903,6 @@
 
             switch (type) {
                 case 'invoice':
-                    // Format: INV-2025-001234 or INV/2025/JAN/001234
                     const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY','JUN',
                                       'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
                     const monthName = monthNames[date.getMonth()];
@@ -782,7 +917,6 @@
                     break;
 
                 case 'quotation':
-                    // Format: QUO-2025-001234 or QT/2025/001234
                     const quoteFormats = [
                         `QUO-${year}-${random}`,
                         `QT/${year}/${random}`,
@@ -794,7 +928,6 @@
                     break;
 
                 case 'purchase_order':
-                    // Format: PO-2025-001234 or PO/2025/001234
                     const poFormats = [
                         `PO-${year}-${random}`,
                         `PO/${year}/${month}/${random}`,
@@ -806,7 +939,6 @@
                     break;
 
                 case 'receipt':
-                    // Format: REC-2025-001234 or RCPT/2025/001234
                     const receiptFormats = [
                         `REC-${year}-${random}`,
                         `RCPT/${year}/${month}/${random}`,
@@ -972,20 +1104,20 @@
             preview.innerHTML = '<div style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">' +
                 '<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px;">' +
                     '<div>' +
-                        '<h2 style="color: #333; margin: 0;">' + (businessSettings.businessName || 'Your Business Name') + '</h2>' +
+                        '<h2 style="color: #2c3e50; margin: 0;">' + (businessSettings.businessName || 'Your Business Name') + '</h2>' +
                         '<p style="margin: 5px 0; color: #666;">' + (businessSettings.businessAddress || 'Your Business Address') + '</p>' +
                         '<p style="margin: 5px 0; color: #666;">' + (businessSettings.businessPhone || 'Your Phone') + '</p>' +
                         '<p style="margin: 5px 0; color: #666;">' + (businessSettings.businessEmail || 'your@email.com') + '</p>' +
                     '</div>' +
                     '<div style="text-align: right;">' +
-                        '<h1 style="color: #007bff; margin: 0;">' + docTypeDisplay + '</h1>' +
+                        '<h1 style="color: #3498db; margin: 0;">' + docTypeDisplay + '</h1>' +
                         '<p style="margin: 5px 0; font-weight: bold;">#' + (docNumber || 'DOC-001') + '</p>' +
                         '<p style="margin: 5px 0; color: #666;">' + (docDate || new Date().toISOString().split('T')[0]) + '</p>' +
                     '</div>' +
                 '</div>' +
 
-                '<div style="margin-bottom: 30px; padding: 15px; background: #f8f9fa; border-radius: 5px;">' +
-                    '<h4 style="margin: 0 0 10px 0; color: #333;">Bill To:</h4>' +
+                '<div style="margin-bottom: 30px; padding: 15px; background: #ecf0f1; border-radius: 5px;">' +
+                    '<h4 style="margin: 0 0 10px 0; color: #2c3e50;">Bill To:</h4>' +
                     '<p style="margin: 5px 0; font-weight: bold;">' + (clientName || 'Client Name') + '</p>' +
                     '<p style="margin: 5px 0; color: #666;">' + (clientAddress || 'Client Address') + '</p>' +
                     '<p style="margin: 5px 0; color: #666;">' + (clientEmail || 'client@email.com') + '</p>' +
@@ -994,7 +1126,7 @@
 
                 '<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">' +
                     '<thead>' +
-                        '<tr style="background: #007bff; color: white;">' +
+                        '<tr style="background: #34495e; color: white;">' +
                             '<th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Description</th>' +
                             '<th style="padding: 12px; text-align: center; border: 1px solid #ddd; width: 80px;">Qty</th>' +
                             '<th style="padding: 12px; text-align: right; border: 1px solid #ddd; width: 100px;">Price</th>' +
@@ -1008,9 +1140,9 @@
 
                 '<div style="display: flex; justify-content: space-between; align-items: start;">' +
                     '<div style="flex: 1; margin-right: 20px;">' +
-                        (notes ? '<div><h4 style="margin: 0 0 10px 0; color: #333;">Notes:</h4><p style="color: #666; margin: 0;">' + notes + '</p></div>' : '') +
+                        (notes ? '<div><h4 style="margin: 0 0 10px 0; color: #2c3e50;">Notes:</h4><p style="color: #666; margin: 0;">' + notes + '</p></div>' : '') +
                     '</div>' +
-                    '<div style="min-width: 250px; background: #f8f9fa; padding: 15px; border-radius: 5px;">' +
+                    '<div style="min-width: 250px; background: #ecf0f1; padding: 15px; border-radius: 5px;">' +
                         '<div style="display: flex; justify-content: space-between; margin-bottom: 10px;">' +
                             '<span>Subtotal:</span>' +
                             '<span>' + formatCurrency(subtotal) + '</span>' +
@@ -1067,7 +1199,7 @@
 
         // Generate PDF using enhanced PDF generator
         async function generatePDF() {
-            if (!window.EnhancedPDFGenerator || !window.EnhancedPDFGenerator.ready) {
+            if (!window.MinimalPDFGenerator || !window.MinimalPDFGenerator.ready) {
                 showNotification('PDF generator not ready', 'error');
                 return;
             }
@@ -1123,12 +1255,10 @@
                         signatureUrl: businessSettings.signatureUrl || '',
                         currency: businessSettings.currency || 'USD'
                     },
-                    client: {
-                        name: clientName || 'Client Name',
-                        address: clientAddress || 'Client Address',
-                        email: clientEmail || 'client@email.com',
-                        phone: clientPhone || 'Client Phone'
-                    },
+                    clientName: clientName || 'Client Name',
+                    clientAddress: clientAddress || 'Client Address',
+                    clientEmail: clientEmail || 'client@email.com',
+                    clientPhone: clientPhone || 'Client Phone',
                     items: items,
                     totals: {
                         subtotal: subtotal,
@@ -1138,8 +1268,8 @@
                     notes: notes
                 };
 
-                // Generate PDF using enhanced generator
-                const filename = await window.EnhancedPDFGenerator.downloadPDF(documentData);
+                // Generate PDF using minimal generator
+                const filename = await window.MinimalPDFGenerator.downloadPDF(documentData);
                 showNotification('PDF generated successfully: ' + filename, 'success');
 
             } catch (error) {
@@ -1217,36 +1347,6 @@
             .catch(error => {
                 console.error('Error verifying code:', error);
                 showNotification('Error verifying code', 'error');
-            });
-        }
-
-        // Handle login
-        function handleLogin(e) {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData);
-
-            fetch('/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    showLoginAlert('Login successful!', 'success');
-                    setTimeout(() => {
-                        window.location.href = result.redirect || '/dashboard';
-                    }, 1000);
-                } else {
-                    showLoginAlert(result.error, 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Login error:', error);
-                showLoginAlert('Login failed', 'danger');
             });
         }
 
@@ -1401,6 +1501,7 @@
                 showNotification('Reset failed', 'error');
             });
         }
+        {% endif %}
 
         // Show notification
         function showNotification(message, type) {
@@ -1420,18 +1521,9 @@
                 }
             }, 5000);
         }
-
-        // Show login alert (specific to login form)
-        function showLoginAlert(message, type) {
-            const container = document.getElementById('login-alert-container');
-            if (container) {
-                container.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
-                    message +
-                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-                '</div>';
-            }
-        }
     </script>
+    {% if session.user_id %}
     <script src="{{ url_for('static', filename='js/pdf-generator.js') }}?v=2.0"></script>
+    {% endif %}
 </body>
 </html>

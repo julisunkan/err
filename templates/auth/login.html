@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,63 +13,183 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="container-fluid h-100">
-        <div class="row h-100">
-            <div class="col-md-6 d-flex align-items-center justify-content-center">
-                <div class="auth-form">
-                    <div class="text-center mb-4">
-                        <h2><i class="fas fa-sign-in-alt"></i> Login</h2>
-                        <p class="text-muted">Sign in to your account</p>
-                    </div>
-
-                    <div id="alert-container"></div>
-
-                    <form id="loginForm" method="POST" action="{{ url_for('login') }}">
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                <input type="text" class="form-control" id="username" name="username" required>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                                <button type="button" class="btn btn-outline-secondary" id="togglePassword">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100 mb-3">
-                            <i class="fas fa-sign-in-alt"></i> Login
-                        </button>
-                    </form>
-
-                    <div class="text-center">
-                        <p>Need an account? Contact your administrator.</p>
-                        <p><a href="{{ url_for('index') }}" class="text-decoration-none">← Back to Home</a></p>
-                    </div>
-                </div>
+    <div class="login-container">
+        <!-- Header for login page -->
+        <nav class="navbar navbar-expand-lg navbar-dark app-header">
+            <div class="container">
+                <a class="navbar-brand mx-auto" href="{{ url_for('index') }}">
+                    <i class="fas fa-file-invoice me-2"></i>Business Documents Generator
+                </a>
             </div>
+        </nav>
 
-            <div class="col-md-6 d-none d-md-flex auth-banner">
-                <div class="d-flex flex-column justify-content-center text-white p-5">
-                    <h3><i class="fas fa-file-invoice"></i> Business Documents Generator</h3>
-                    <p class="lead">Create professional invoices, quotes, and receipts with ease.</p>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-check text-success"></i> Professional PDF generation</li>
-                        <li><i class="fas fa-check text-success"></i> Secure document management</li>
-                        <li><i class="fas fa-check text-success"></i> Real-time preview</li>
-                        <li><i class="fas fa-check text-success"></i> Business settings management</li>
-                    </ul>
+        <!-- Login Content -->
+        <div class="login-content">
+            <div class="container">
+                <div class="row justify-content-center align-items-center min-vh-100">
+                    <div class="col-lg-10">
+                        <div class="row">
+                            <!-- Left side - Features -->
+                            <div class="col-lg-6 d-none d-lg-flex align-items-center">
+                                <div class="features-section text-white">
+                                    <h2 class="mb-4">
+                                        <i class="fas fa-rocket me-3"></i>
+                                        Professional Business Documents
+                                    </h2>
+                                    <div class="feature-list">
+                                        <div class="feature-item mb-4">
+                                            <div class="feature-icon">
+                                                <i class="fas fa-file-invoice"></i>
+                                            </div>
+                                            <div class="feature-content">
+                                                <h5>Generate Invoices</h5>
+                                                <p>Create professional invoices with automated calculations and your business branding.</p>
+                                            </div>
+                                        </div>
+                                        <div class="feature-item mb-4">
+                                            <div class="feature-icon">
+                                                <i class="fas fa-quote-left"></i>
+                                            </div>
+                                            <div class="feature-content">
+                                                <h5>Price Quotations</h5>
+                                                <p>Send detailed quotations to clients with itemized pricing and terms.</p>
+                                            </div>
+                                        </div>
+                                        <div class="feature-item mb-4">
+                                            <div class="feature-icon">
+                                                <i class="fas fa-receipt"></i>
+                                            </div>
+                                            <div class="feature-content">
+                                                <h5>Receipts & Orders</h5>
+                                                <p>Generate receipts and purchase orders with secure PDF downloads.</p>
+                                            </div>
+                                        </div>
+                                        <div class="feature-item">
+                                            <div class="feature-icon">
+                                                <i class="fas fa-shield-alt"></i>
+                                            </div>
+                                            <div class="feature-content">
+                                                <h5>Secure & Professional</h5>
+                                                <p>Your documents are generated securely with professional layouts and branding.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right side - Login Form -->
+                            <div class="col-lg-6">
+                                <div class="login-form-container">
+                                    <div class="card login-card shadow-lg">
+                                        <div class="card-body p-5">
+                                            <div class="text-center mb-4">
+                                                <div class="login-icon mb-3">
+                                                    <i class="fas fa-user-circle fa-4x text-primary"></i>
+                                                </div>
+                                                <h3 class="card-title">Welcome Back</h3>
+                                                <p class="text-muted">Sign in to create professional business documents</p>
+                                            </div>
+
+                                            <div id="alert-container"></div>
+
+                                            <form id="loginForm" method="POST" action="{{ url_for('login') }}">
+                                                <div class="mb-4">
+                                                    <label for="username" class="form-label">Username</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">
+                                                            <i class="fas fa-user"></i>
+                                                        </span>
+                                                        <input type="text" class="form-control form-control-lg" id="username" name="username" required placeholder="Enter your username">
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-4">
+                                                    <label for="password" class="form-label">Password</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">
+                                                            <i class="fas fa-lock"></i>
+                                                        </span>
+                                                        <input type="password" class="form-control form-control-lg" id="password" name="password" required placeholder="Enter your password">
+                                                        <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div class="d-grid mb-4">
+                                                    <button type="submit" class="btn btn-primary btn-lg">
+                                                        <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                                                    </button>
+                                                </div>
+                                            </form>
+
+                                            <div class="text-center">
+                                                <p class="mb-1">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    Need an account? Contact your administrator.
+                                                </p>
+                                                <p class="mt-3">
+                                                    <a href="{{ url_for('index') }}" class="text-decoration-none">
+                                                        <i class="fas fa-arrow-left me-1"></i>Back to Home
+                                                    </a>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Footer with consistent styling -->
+    <footer class="app-footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6><i class="fas fa-file-pdf me-2"></i>Document Generator</h6>
+                    <p class="small mb-0">Create professional business documents with ease. Invoices, quotes, receipts and more.</p>
+                </div>
+                <div class="col-md-4">
+                    <h6><i class="fas fa-rocket me-2"></i>Features</h6>
+                    <div class="small">
+                        <span class="d-block">✓ Professional Templates</span>
+                        <span class="d-block">✓ Secure Download Codes</span>
+                        <span class="d-block">✓ Business Settings</span>
+                        <span class="d-block">✓ Multiple Document Types</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h6><i class="fas fa-shield-alt me-2"></i>Security</h6>
+                    <div class="small">
+                        <span class="badge bg-light text-dark mb-2 d-block w-fit">
+                            <i class="fas fa-lock me-1"></i>Secure Authentication
+                        </span>
+                        <span class="badge bg-light text-dark mb-2 d-block w-fit">
+                            <i class="fas fa-key me-1"></i>One-time Codes
+                        </span>
+                        <span class="badge bg-light text-dark d-block w-fit">
+                            <i class="fas fa-user-shield me-1"></i>Data Protection
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-3 footer-divider">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <p class="mb-0 small">&copy; 2025 Business Documents Generator. All rights reserved.</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="text-light small">
+                        <i class="fas fa-lock me-1"></i>Secure Business Platform
+                    </span>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -112,14 +233,14 @@
                         const result = await response.json();
 
                         if (result.success) {
-                            showAlert('Login successful!', 'success');
+                            showAlert('Login successful! Redirecting...', 'success');
                             // Store username for PDF generation
                             if (data.username) {
                                 sessionStorage.setItem('current_username', data.username);
                             }
                             // Redirect after short delay
                             setTimeout(() => {
-                                window.location.href = result.redirect || '/dashboard';
+                                window.location.href = result.redirect || '/';
                             }, 1000);
                         } else {
                             showAlert(result.error, 'danger');
