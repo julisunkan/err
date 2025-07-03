@@ -178,37 +178,52 @@ class MinimalPDFGenerator {
     }
 
     // Add client section
-    addClientSection(clientData) {
+    addClientSection(documentData) {
         this.setFont(this.fontSize.normal, 'bold');
         this.doc.text('BILL TO:', this.margin, this.currentY);
         this.currentY += 8;
 
+        // Extract client data from documentData
+        const clientName = documentData.clientName || documentData.client?.name || '';
+        const clientAddress = documentData.clientAddress || documentData.client?.address || '';
+        const clientPhone = documentData.clientPhone || documentData.client?.phone || '';
+        const clientEmail = documentData.clientEmail || documentData.client?.email || '';
+
         // Client information
-        if (clientData.name) {
+        if (clientName) {
             this.setFont(this.fontSize.normal, 'bold');
-            this.doc.text(clientData.name, this.margin, this.currentY);
+            this.doc.text(clientName, this.margin, this.currentY);
             this.currentY += 6;
         }
 
-        if (clientData.address) {
+        if (clientAddress) {
             this.setFont(this.fontSize.small, 'normal');
-            const addressLines = this.doc.splitTextToSize(clientData.address, this.pageWidth - (2 * this.margin));
+            const addressLines = this.doc.splitTextToSize(clientAddress, this.pageWidth - (2 * this.margin));
             for (let i = 0; i < addressLines.length; i++) {
                 this.doc.text(addressLines[i], this.margin, this.currentY);
                 this.currentY += 5;
             }
         }
 
-        if (clientData.phone || clientData.email) {
+        if (clientPhone || clientEmail) {
             this.setFont(this.fontSize.small, 'normal');
-            if (clientData.phone) {
-                this.doc.text('Phone: ' + clientData.phone, this.margin, this.currentY);
+            if (clientPhone) {
+                this.doc.text('Phone: ' + clientPhone, this.margin, this.currentY);
                 this.currentY += 5;
             }
-            if (clientData.email) {
-                this.doc.text('Email: ' + clientData.email, this.margin, this.currentY);
+            if (clientEmail) {
+                this.doc.text('Email: ' + clientEmail, this.margin, this.currentY);
                 this.currentY += 5;
             }
+        }
+
+        // Add default placeholder if no client info is provided
+        if (!clientName && !clientAddress && !clientPhone && !clientEmail) {
+            this.setFont(this.fontSize.small, 'italic');
+            this.doc.setTextColor(128, 128, 128);
+            this.doc.text('No client information provided', this.margin, this.currentY);
+            this.doc.setTextColor(0, 0, 0);
+            this.currentY += 6;
         }
 
         this.currentY += 10;

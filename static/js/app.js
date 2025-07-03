@@ -51,6 +51,56 @@ window.fetch = function(...args) {
                     console.log('No user session found');
                 });
         },
+loadSettings: function() {
+            // Load business settings from backend
+            fetch('/api/get-public-settings')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        this.settings = data.settings;
+                        console.log('Business settings loaded:', this.settings);
+
+                        // Update form fields if they exist
+                        if (document.getElementById('businessName')) {
+                            document.getElementById('businessName').value = this.settings.businessName || '';
+                        }
+                        if (document.getElementById('businessAddress')) {
+                            document.getElementById('businessAddress').value = this.settings.businessAddress || '';
+                        }
+                        if (document.getElementById('businessPhone')) {
+                            document.getElementById('businessPhone').value = this.settings.businessPhone || '';
+                        }
+                        if (document.getElementById('businessEmail')) {
+                            document.getElementById('businessEmail').value = this.settings.businessEmail || '';
+                        }
+                        if (document.getElementById('taxRate')) {
+                            document.getElementById('taxRate').value = this.settings.taxRate || 0;
+                        }
+                        if (document.getElementById('currency')) {
+                            document.getElementById('currency').value = this.settings.currency || 'USD';
+                        }
+                        if (document.getElementById('businessLogoUrl')) {
+                            document.getElementById('businessLogoUrl').value = this.settings.businessLogoUrl || '';
+                        }
+                        if (document.getElementById('signatureUrl')) {
+                            document.getElementById('signatureUrl').value = this.settings.signatureUrl || '';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading settings:', error);
+                });
+        },
+
+        // Fix client data collection for PDF generation
+        collectClientData: function() {
+            return {
+                name: document.getElementById('clientName')?.value || '',
+                address: document.getElementById('clientAddress')?.value || '',
+                phone: document.getElementById('clientPhone')?.value || '',
+                email: document.getElementById('clientEmail')?.value || ''
+            };
+        },
 function updateLivePreview() {
             const documentData = collectFormData();
             const previewContainer = document.getElementById('livePreview');
