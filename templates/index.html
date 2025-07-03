@@ -813,7 +813,7 @@
             document.getElementById('total').textContent = formatCurrency(total);
         }
 
-        // Format currency based on settings
+        // Format currency based on settings with comma thousands separator
         function formatCurrency(amount) {
             const currency = businessSettings.currency || 'USD';
             const currencySymbols = {
@@ -826,7 +826,15 @@
             };
 
             const symbol = currencySymbols[currency] || '$';
-            return symbol + amount.toFixed(2);
+            const numAmount = parseFloat(amount) || 0;
+            
+            // Format with comma thousands separator
+            const formatted = numAmount.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            return symbol + formatted;
         }
 
         // Update document preview
@@ -965,17 +973,14 @@
             });
         }
 
-        // Generate PDF
-        function generatePDF() {
-            if (!window.jsPDF) {
-                showNotification('PDF library not loaded', 'error');
+        // Generate PDF using enhanced PDF generator
+        async function generatePDF() {
+            if (!window.EnhancedPDFGenerator || !window.EnhancedPDFGenerator.ready) {
+                showNotification('PDF generator not ready', 'error');
                 return;
             }
 
             try {
-                const jsPDF = window.jspdf.jsPDF;
-                const doc = new jsPDF();
-
                 // Get form data
                 const docType = document.getElementById('documentType').value;
                 const docNumber = document.getElementById('documentNumber').value;
@@ -986,37 +991,9 @@
                 const clientPhone = document.getElementById('clientPhone').value;
                 const notes = document.getElementById('notes').value;
 
-                // Set up the PDF
-                doc.setFontSize(20);
-                const docTypeDisplay = docType.charAt(0).toUpperCase() + docType.slice(1).replace('_', ' ');
-                doc.text(docTypeDisplay, 20, 30);
-
-                doc.setFontSize(12);
-                doc.text('Document #: ' + docNumber, 20, 45);
-                doc.text('Date: ' + docDate, 20, 55);
-
-                // Business info
-                doc.text(businessSettings.businessName || 'Your Business', 20, 75);
-                doc.text(businessSettings.businessAddress || 'Your Address', 20, 85);
-                doc.text(businessSettings.businessPhone || 'Your Phone', 20, 95);
-
-                // Client info
-                doc.text('Bill To:', 20, 115);
-                doc.text(clientName || 'Client Name', 20, 125);
-                doc.text(clientAddress || 'Client Address', 20, 135);
-                doc.text(clientEmail || 'client@email.com', 20, 145);
-
-                // Items table
-                let yPos = 165;
-                doc.text('Description', 20, yPos);
-                doc.text('Qty', 120, yPos);
-                doc.text('Price', 140, yPos);
-                doc.text('Total', 170, yPos);
-
-                yPos += 10;
-                doc.line(20, yPos, 190, yPos); // Table header line
-
+                // Get items
                 const itemRows = document.querySelectorAll('.item-row');
+                const items = [];
                 let subtotal = 0;
 
                 itemRows.forEach(row => {
@@ -1026,46 +1003,56 @@
                     const total = quantity * price;
 
                     if (description || quantity || price) {
-                        yPos += 15;
-                        doc.text(description, 20, yPos);
-                        doc.text(quantity.toString(), 120, yPos);
-                        doc.text(formatCurrency(price), 140, yPos);
-                        doc.text(formatCurrency(total), 170, yPos);
+                        items.push({
+                            description: description || 'No description',
+                            quantity: quantity,
+                            price: price
+                        });
                         subtotal += total;
                     }
                 });
 
-                // Totals
-                yPos += 20;
+                // Calculate totals
                 const taxRate = parseFloat(businessSettings.taxRate) || 0;
                 const tax = subtotal * (taxRate / 100);
-                const finalTotal = subtotal + tax;
+                const grandTotal = subtotal + tax;
 
-                doc.text('Subtotal: ' + formatCurrency(subtotal), 120, yPos);
-                yPos += 10;
-                doc.text('Tax (' + taxRate + '%): ' + formatCurrency(tax), 120, yPos);
-                yPos += 10;
-                doc.setFontSize(14);
-                doc.text('Total: ' + formatCurrency(finalTotal), 120, yPos);
+                // Prepare document data
+                const documentData = {
+                    type: docType,
+                    number: docNumber,
+                    date: docDate,
+                    business: {
+                        businessName: businessSettings.businessName || 'Your Business Name',
+                        businessAddress: businessSettings.businessAddress || 'Your Business Address',
+                        businessPhone: businessSettings.businessPhone || 'Your Phone',
+                        businessEmail: businessSettings.businessEmail || 'your@email.com',
+                        businessLogoUrl: businessSettings.businessLogoUrl || '',
+                        signatureUrl: businessSettings.signatureUrl || '',
+                        currency: businessSettings.currency || 'USD'
+                    },
+                    client: {
+                        name: clientName || 'Client Name',
+                        address: clientAddress || 'Client Address',
+                        email: clientEmail || 'client@email.com',
+                        phone: clientPhone || 'Client Phone'
+                    },
+                    items: items,
+                    totals: {
+                        subtotal: subtotal,
+                        taxRate: taxRate,
+                        grandTotal: grandTotal
+                    },
+                    notes: notes
+                };
 
-                // Notes
-                if (notes) {
-                    yPos += 20;
-                    doc.setFontSize(12);
-                    doc.text('Notes:', 20, yPos);
-                    yPos += 10;
-                    doc.text(notes, 20, yPos);
-                }
-
-                // Save the PDF
-                const filename = docType + '-' + docNumber + '.pdf';
-                doc.save(filename);
-                
-                showNotification('PDF generated successfully!', 'success');
+                // Generate PDF using enhanced generator
+                const filename = await window.EnhancedPDFGenerator.downloadPDF(documentData);
+                showNotification('PDF generated successfully: ' + filename, 'success');
 
             } catch (error) {
                 console.error('Error generating PDF:', error);
-                showNotification('Error generating PDF', 'error');
+                showNotification('Error generating PDF: ' + error.message, 'error');
             }
         }
 
