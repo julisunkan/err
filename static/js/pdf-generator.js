@@ -121,7 +121,7 @@ class SimplePDFGenerator {
             try {
                 const logoData = await this.loadImage(businessData.businessLogoUrl);
                 if (logoData) {
-                    const logoSize = 35; // Professional logo size
+                    const logoSize = 30; // Reduced logo size to prevent overlap
                     const logoX = this.pageWidth - this.margin - logoSize;
 
                     // Add subtle border around logo
@@ -158,7 +158,7 @@ class SimplePDFGenerator {
 
         // Adjust headerY if logo was added to ensure proper spacing
         if (logoAdded) {
-            headerY = Math.max(headerY, this.currentY + 35);
+            headerY = Math.max(headerY, this.currentY + 45); // Increased spacing for logo
         }
 
         // Company details section with proper spacing
@@ -196,7 +196,9 @@ class SimplePDFGenerator {
         this.doc.setDrawColor(0, 0, 0);
         this.doc.line(this.margin, headerY, this.pageWidth - this.margin, headerY);
 
-        this.currentY = headerY + 20;
+        // Ensure adequate spacing after header, especially when logo is present
+        const minSpacingAfterHeader = logoAdded ? 30 : 20;
+        this.currentY = headerY + minSpacingAfterHeader;
     }
 
     // Add document title and details
