@@ -95,10 +95,10 @@
                     </button>
                 </li>
                 {% endif %}
-                {% if session.user_id %}
+                {% if session.get('is_admin') %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
-                        <i class="fas fa-cog me-2"></i>Settings
+                        <i class="fas fa-cog me-2"></i>Business Settings
                     </button>
                 </li>
                 {% endif %}
@@ -370,14 +370,15 @@
                 </div>
                 {% endif %}
 
-                <!-- Settings Tab (for logged-in users) -->
-                {% if session.user_id %}
+                <!-- Business Settings Tab (Admin Only) -->
+                {% if session.get('is_admin') %}
                 <div class="tab-pane fade" id="settings" role="tabpanel">
                     <div class="row">
                         <div class="col-md-8">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="card-title mb-0">My Business Settings</h5>
+                                    <h5 class="card-title mb-0"><i class="fas fa-building me-2"></i>Global Business Settings</h5>
+                                    <small class="text-muted">These settings will be used for all generated documents</small>
                                 </div>
                                 <div class="card-body">
                                     <form id="settingsForm">
@@ -385,25 +386,25 @@
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <label for="businessName" class="form-label">Business Name</label>
-                                                    <input type="text" class="form-control" id="businessName" name="businessName">
+                                                    <input type="text" class="form-control" id="businessName" name="businessName" required>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <label for="businessEmail" class="form-label">Business Email</label>
-                                                    <input type="email" class="form-control" id="businessEmail" name="businessEmail">
+                                                    <input type="email" class="form-control" id="businessEmail" name="businessEmail" required>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="mb-3">
                                             <label for="businessAddress" class="form-label">Business Address</label>
-                                            <textarea class="form-control" id="businessAddress" name="businessAddress" rows="3"></textarea>
+                                            <textarea class="form-control" id="businessAddress" name="businessAddress" rows="3" required></textarea>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <label for="businessPhone" class="form-label">Business Phone</label>
-                                                    <input type="tel" class="form-control" id="businessPhone" name="businessPhone">
+                                                    <input type="tel" class="form-control" id="businessPhone" name="businessPhone" required>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
@@ -425,21 +426,26 @@
                                                 <div class="mb-3">
                                                     <label for="businessLogoUrl" class="form-label">Business Logo URL</label>
                                                     <input type="url" class="form-control" id="businessLogoUrl" name="businessLogoUrl" placeholder="https://example.com/logo.png">
+                                                    <div class="form-text">URL to your business logo image</div>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <label for="signatureUrl" class="form-label">Signature URL</label>
                                                     <input type="url" class="form-control" id="signatureUrl" name="signatureUrl" placeholder="https://example.com/signature.png">
+                                                    <div class="form-text">URL to your signature image</div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="mb-3">
-                                            <label for="taxRate" class="form-label">Tax Rate (%)</label>
+                                            <label for="taxRate" class="form-label">Default Tax Rate (%)</label>
                                             <input type="number" class="form-control" id="taxRate" name="taxRate" step="0.1" min="0" max="100">
+                                            <div class="form-text">Default tax rate for all documents</div>
                                         </div>
                                         <div class="d-grid gap-2">
-                                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save me-2"></i>Save Business Settings
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
@@ -448,17 +454,31 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="card-title mb-0">Quick Actions</h5>
+                                    <h5 class="card-title mb-0">Settings Management</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="d-grid gap-2">
-                                        <button type="button" class="btn btn-outline-primary" id="exportUserSettings">
-                                            <i class="fas fa-download me-2"></i>Export My Settings
+                                        <button type="button" class="btn btn-outline-success" id="exportBusinessSettings">
+                                            <i class="fas fa-download me-2"></i>Export Business Settings
                                         </button>
-                                        <button type="button" class="btn btn-outline-secondary" id="importUserSettings">
-                                            <i class="fas fa-upload me-2"></i>Import Settings
+                                        <button type="button" class="btn btn-outline-info" id="importBusinessSettings">
+                                            <i class="fas fa-upload me-2"></i>Import Business Settings
                                         </button>
-                                        <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                                        <input type="file" id="importBusinessFileInput" accept=".json" style="display: none;">
+                                        <hr>
+                                        <button type="button" class="btn btn-outline-warning" onclick="resetToDefaults()">
+                                            <i class="fas fa-undo me-2"></i>Reset to Defaults
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Preview</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="settingsPreview" class="small">
+                                        <div class="text-muted">Business settings preview will appear here</div>
                                     </div>
                                 </div>
                             </div>
@@ -575,13 +595,15 @@
 
         // Load business settings
         function loadBusinessSettings() {
-            fetch('/api/get-settings')
+            fetch('/api/get-public-settings')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         businessSettings = data.settings;
                         console.log('Business settings loaded:', businessSettings);
                         updatePreview();
+                        populateSettingsForm();
+                        updateSettingsPreview();
                     }
                 })
                 .catch(error => {
@@ -598,6 +620,20 @@
                         currency: 'USD'
                     };
                 });
+        }
+
+        // Populate settings form (Admin only)
+        function populateSettingsForm() {
+            if (!businessSettings) return;
+
+            const fields = ['businessName', 'businessEmail', 'businessAddress', 'businessPhone', 'businessLogoUrl', 'signatureUrl', 'taxRate', 'currency'];
+            
+            fields.forEach(field => {
+                const element = document.getElementById(field);
+                if (element && businessSettings[field] !== undefined) {
+                    element.value = businessSettings[field];
+                }
+            });
         }
 
         // Setup all event listeners
@@ -677,17 +713,17 @@
                 settingsForm.addEventListener('submit', handleSettingsSubmit);
             }
 
-            // Export user settings
-            const exportBtn = document.getElementById('exportUserSettings');
+            // Export business settings (Admin only)
+            const exportBtn = document.getElementById('exportBusinessSettings');
             if (exportBtn) {
-                exportBtn.addEventListener('click', exportUserSettings);
+                exportBtn.addEventListener('click', exportBusinessSettings);
             }
 
-            // Import user settings
-            const importBtn = document.getElementById('importUserSettings');
+            // Import business settings (Admin only)
+            const importBtn = document.getElementById('importBusinessSettings');
             if (importBtn) {
                 importBtn.addEventListener('click', function() {
-                    const importInput = document.getElementById('importFileInput');
+                    const importInput = document.getElementById('importBusinessFileInput');
                     if (importInput) {
                         importInput.click();
                     }
@@ -704,9 +740,9 @@
                 });
             }
 
-            const importInput = document.getElementById('importFileInput');
+            const importInput = document.getElementById('importBusinessFileInput');
             if (importInput) {
-                importInput.addEventListener('change', importUserSettings);
+                importInput.addEventListener('change', importBusinessSettings);
             }
         }
 
@@ -1157,13 +1193,13 @@
             });
         }
 
-        // Handle settings form
+        // Handle settings form (Admin only)
         function handleSettingsSubmit(e) {
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData);
 
-            fetch('/api/save-settings', {
+            fetch('/api/admin/save-business-settings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1173,10 +1209,11 @@
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
-                    showNotification('Settings saved successfully!', 'success');
+                    showNotification('Business settings saved successfully!', 'success');
                     // Update business settings
                     businessSettings = data;
                     updatePreview();
+                    updateSettingsPreview();
                 } else {
                     showNotification(result.error || 'Failed to save settings', 'error');
                 }
@@ -1187,9 +1224,9 @@
             });
         }
 
-        // Export user settings
-        function exportUserSettings() {
-            fetch('/api/export-settings')
+        // Export business settings (Admin only)
+        function exportBusinessSettings() {
+            fetch('/api/admin/export-business-settings')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -1202,7 +1239,7 @@
                     a.click();
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
-                    showNotification('Settings exported successfully!', 'success');
+                    showNotification('Business settings exported successfully!', 'success');
                 } else {
                     showNotification(data.error || 'Export failed', 'error');
                 }
@@ -1213,17 +1250,22 @@
             });
         }
 
-        // Import user settings
-        function importUserSettings(e) {
+        // Import business settings (Admin only)
+        function importBusinessSettings(e) {
             const file = e.target.files[0];
             if (!file) return;
+
+            if (!confirm('Are you sure you want to import business settings? This will overwrite current settings.')) {
+                e.target.value = '';
+                return;
+            }
 
             const reader = new FileReader();
             reader.onload = function(event) {
                 try {
                     const settings = JSON.parse(event.target.result);
 
-                    fetch('/api/import-settings', {
+                    fetch('/api/admin/import-business-settings', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -1233,7 +1275,7 @@
                     .then(response => response.json())
                     .then(result => {
                         if (result.success) {
-                            showNotification('Settings imported successfully!', 'success');
+                            showNotification('Business settings imported successfully!', 'success');
                             location.reload(); // Reload to show updated settings
                         } else {
                             showNotification(result.error || 'Import failed', 'error');
@@ -1252,6 +1294,55 @@
 
             // Clear the input
             e.target.value = '';
+        }
+
+        // Update settings preview
+        function updateSettingsPreview() {
+            const preview = document.getElementById('settingsPreview');
+            if (!preview) return;
+
+            const name = businessSettings.businessName || 'Not set';
+            const email = businessSettings.businessEmail || 'Not set';
+            const phone = businessSettings.businessPhone || 'Not set';
+            const currency = businessSettings.currency || 'USD';
+            const taxRate = businessSettings.taxRate || 0;
+
+            preview.innerHTML = `
+                <div><strong>Business:</strong> ${name}</div>
+                <div><strong>Email:</strong> ${email}</div>
+                <div><strong>Phone:</strong> ${phone}</div>
+                <div><strong>Currency:</strong> ${currency}</div>
+                <div><strong>Tax Rate:</strong> ${taxRate}%</div>
+                <div><strong>Logo:</strong> ${businessSettings.businessLogoUrl ? 'Set' : 'Not set'}</div>
+                <div><strong>Signature:</strong> ${businessSettings.signatureUrl ? 'Set' : 'Not set'}</div>
+            `;
+        }
+
+        // Reset to defaults
+        function resetToDefaults() {
+            if (!confirm('Are you sure you want to reset business settings to defaults? This action cannot be undone.')) {
+                return;
+            }
+
+            fetch('/api/admin/reset-business-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showNotification('Business settings reset to defaults!', 'success');
+                    location.reload();
+                } else {
+                    showNotification(result.error || 'Reset failed', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Reset error:', error);
+                showNotification('Reset failed', 'error');
+            });
         }
 
         // Show notification

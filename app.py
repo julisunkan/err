@@ -740,39 +740,43 @@ def verify_code():
         logging.error(f"Error verifying code: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to verify code'}), 500
 
-@app.route('/api/save-settings', methods=['POST'])
-@login_required
-def save_settings():
-    """Save business settings for current user"""
+@app.route('/api/admin/save-business-settings', methods=['POST'])
+@admin_required
+def save_business_settings():
+    """Save global business settings (Admin only)"""
     try:
         data = request.get_json()
 
-        # Get or create user settings record
-        user_settings = UserBusinessSettings.query.filter_by(user_id=session['user_id']).first()
-        if not user_settings:
-            user_settings = UserBusinessSettings(user_id=session['user_id'])
-            db.session.add(user_settings)
+        # Get or create global business settings record
+        business_settings = BusinessSettings.query.first()
+        if not business_settings:
+            business_settings = BusinessSettings()
+            db.session.add(business_settings)
 
         # Update settings with proper handling of empty values
-        user_settings.business_name = data.get('businessName', '').strip()
-        user_settings.business_address = data.get('businessAddress', '').strip()
-        user_settings.business_phone = data.get('businessPhone', '').strip()
-        user_settings.business_email = data.get('businessEmail', '').strip()
-        user_settings.business_logo_url = data.get('businessLogoUrl', '').strip()
-        user_settings.signature_url = data.get('signatureUrl', '').strip()
-        user_settings.tax_rate = float(data.get('taxRate', 0))
-        user_settings.currency = data.get('currency', 'USD').strip()
+        business_settings.business_name = data.get('businessName', '').strip()
+        business_settings.business_address = data.get('businessAddress', '').strip()
+        business_settings.business_phone = data.get('businessPhone', '').strip()
+        business_settings.business_email = data.get('businessEmail', '').strip()
+        business_settings.business_logo_url = data.get('businessLogoUrl', '').strip()
+        business_settings.signature_url = data.get('signatureUrl', '').strip()
+        business_settings.tax_rate = float(data.get('taxRate', 0))
+        business_settings.currency = data.get('currency', 'USD').strip()
+        business_settings.updated_at = datetime.utcnow()
 
         db.session.commit()
 
-        logging.info(f"Settings saved for user {session['user_id']}: {user_settings.business_name}")
+        logging.info(f"Business settings saved by admin {session['user_id']}: {business_settings.business_name}")
 
-        return jsonify({'success': True, 'message': 'Settings saved successfully'})
+        # Log admin activity
+        log_activity(session['user_id'], 'business_settings_update', f"Admin updated business settings", request.remote_addr, request.user_agent.string)
+
+        return jsonify({'success': True, 'message': 'Business settings saved successfully'})
 
     except Exception as e:
         db.session.rollback()
-        logging.error(f"Error saving settings: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to save settings'}), 500
+        logging.error(f"Error saving business settings: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to save business settings'}), 500
 
 @app.route('/api/get-public-settings')
 def get_public_settings():
@@ -814,29 +818,11 @@ def get_public_settings():
         logging.error(f"Error getting public settings: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to get settings'}), 500
 
-@app.route('/api/get-settings')
-def get_settings():
-    """Get business settings for current user or default"""
+@app.route('/api/admin/get-business-settings')
+@admin_required
+def get_business_settings():
+    """Get business settings for admin to edit"""
     try:
-        # If user is logged in, get their settings
-        if 'user_id' in session:
-            user_settings = UserBusinessSettings.query.filter_by(user_id=session['user_id']).first()
-            if user_settings:
-                return jsonify({
-                    'success': True,
-                    'settings': {
-                        'businessName': user_settings.business_name or '',
-                        'businessAddress': user_settings.business_address or '',
-                        'businessPhone': user_settings.business_phone or '',
-                        'businessEmail': user_settings.business_email or '',
-                        'businessLogoUrl': user_settings.business_logo_url or '',
-                        'signatureUrl': user_settings.signature_url or '',
-                        'taxRate': user_settings.tax_rate or 0,
-                        'currency': user_settings.currency or 'USD'
-                    }
-                })
-
-        # Fallback to global settings or defaults
         settings = BusinessSettings.query.first()
         if settings:
             return jsonify({
@@ -853,7 +839,7 @@ def get_settings():
                 }
             })
 
-        # Default empty settings
+        # Default empty settings for new setup
         return jsonify({
             'success': True,
             'settings': {
@@ -869,16 +855,17 @@ def get_settings():
         })
 
     except Exception as e:
-        logging.error(f"Error getting settings: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to get settings'}), 500
+        logging.error(f"Error getting business settings: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get business settings'}), 500
 
-@app.route('/api/export-settings')
-def export_settings():
-    """Export business settings as JSON"""
+@app.route('/api/admin/export-business-settings')
+@admin_required
+def export_business_settings():
+    """Export business settings as JSON (Admin only)"""
     try:
         settings = BusinessSettings.query.first()
         if not settings:
-            return jsonify({'success': False, 'error': 'No settings found'}), 404
+            return jsonify({'success': False, 'error': 'No business settings found'}), 404
 
         settings_data = {
             'businessName': settings.business_name,
@@ -889,8 +876,13 @@ def export_settings():
             'signatureUrl': settings.signature_url,
             'taxRate': settings.tax_rate,
             'currency': settings.currency,
-            'exportDate': datetime.utcnow().isoformat()
+            'exportDate': datetime.utcnow().isoformat(),
+            'exportedBy': f"{session['user_id']}",
+            'version': '1.0'
         }
+
+        # Log admin activity
+        log_activity(session['user_id'], 'business_settings_export', f"Admin exported business settings", request.remote_addr, request.user_agent.string)
 
         return jsonify({
             'success': True,
@@ -899,40 +891,85 @@ def export_settings():
         })
 
     except Exception as e:
-        logging.error(f"Error exporting settings: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to export settings'}), 500
+        logging.error(f"Error exporting business settings: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to export business settings'}), 500
 
-@app.route('/api/import-settings', methods=['POST'])
-@login_required
-def import_settings():
-    """Import business settings from JSON"""
+@app.route('/api/admin/import-business-settings', methods=['POST'])
+@admin_required
+def import_business_settings():
+    """Import business settings from JSON (Admin only)"""
     try:
         data = request.get_json()
         settings_data = data.get('settings', {})
 
-        # Get or create user settings record
-        user_settings = UserBusinessSettings.query.filter_by(user_id=session['user_id']).first()
-        if not user_settings:
-            user_settings = UserBusinessSettings(user_id=session['user_id'])
-            db.session.add(user_settings)
+        # Validate required fields
+        required_fields = ['businessName', 'businessEmail', 'businessAddress', 'businessPhone']
+        for field in required_fields:
+            if not settings_data.get(field, '').strip():
+                return jsonify({'success': False, 'error': f'{field} is required'}), 400
+
+        # Get or create global business settings record
+        business_settings = BusinessSettings.query.first()
+        if not business_settings:
+            business_settings = BusinessSettings()
+            db.session.add(business_settings)
 
         # Update settings with imported data
-        user_settings.business_name = settings_data.get('businessName', '')
-        user_settings.business_address = settings_data.get('businessAddress', '')
-        user_settings.business_phone = settings_data.get('businessPhone', '')
-        user_settings.business_email = settings_data.get('businessEmail', '')
-        user_settings.business_logo_url = settings_data.get('businessLogoUrl', '')
-        user_settings.signature_url = settings_data.get('signatureUrl', '')
-        user_settings.tax_rate = float(settings_data.get('taxRate', 0))
-        user_settings.currency = settings_data.get('currency', 'USD')
+        business_settings.business_name = settings_data.get('businessName', '').strip()
+        business_settings.business_address = settings_data.get('businessAddress', '').strip()
+        business_settings.business_phone = settings_data.get('businessPhone', '').strip()
+        business_settings.business_email = settings_data.get('businessEmail', '').strip()
+        business_settings.business_logo_url = settings_data.get('businessLogoUrl', '').strip()
+        business_settings.signature_url = settings_data.get('signatureUrl', '').strip()
+        business_settings.tax_rate = float(settings_data.get('taxRate', 0))
+        business_settings.currency = settings_data.get('currency', 'USD').strip()
+        business_settings.updated_at = datetime.utcnow()
 
         db.session.commit()
 
-        return jsonify({'success': True, 'message': 'Settings imported successfully'})
+        # Log admin activity
+        log_activity(session['user_id'], 'business_settings_import', f"Admin imported business settings", request.remote_addr, request.user_agent.string)
+
+        return jsonify({'success': True, 'message': 'Business settings imported successfully'})
 
     except Exception as e:
-        logging.error(f"Error importing settings: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to import settings'}), 500
+        db.session.rollback()
+        logging.error(f"Error importing business settings: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to import business settings'}), 500
+
+@app.route('/api/admin/reset-business-settings', methods=['POST'])
+@admin_required
+def reset_business_settings():
+    """Reset business settings to defaults (Admin only)"""
+    try:
+        # Get or create global business settings record
+        business_settings = BusinessSettings.query.first()
+        if not business_settings:
+            business_settings = BusinessSettings()
+            db.session.add(business_settings)
+
+        # Reset to default values
+        business_settings.business_name = 'Your Business Name'
+        business_settings.business_address = 'Your Business Address'
+        business_settings.business_phone = 'Your Phone Number'
+        business_settings.business_email = 'your@email.com'
+        business_settings.business_logo_url = ''
+        business_settings.signature_url = ''
+        business_settings.tax_rate = 0.0
+        business_settings.currency = 'USD'
+        business_settings.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        # Log admin activity
+        log_activity(session['user_id'], 'business_settings_reset', f"Admin reset business settings to defaults", request.remote_addr, request.user_agent.string)
+
+        return jsonify({'success': True, 'message': 'Business settings reset to defaults'})
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error resetting business settings: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to reset business settings'}), 500
 
 @app.route('/api/admin/users')
 @admin_required
