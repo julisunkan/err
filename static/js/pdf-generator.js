@@ -477,58 +477,68 @@ class SimplePDFGenerator {
             this.currentY += 15;
         }
 
-        // Professional signature section
+        // Calculate footer area - reserve space at bottom
+        const footerAreaStart = this.pageHeight - 60;
+        const footerLineY = this.pageHeight - 35;
+        
+        // Professional signature section - positioned in footer area
         if (businessData.signatureUrl && businessData.signatureUrl.trim()) {
             this.setFont(this.fontSize.normal, 'bold');
-            this.doc.text('AUTHORIZED SIGNATURE:', this.margin, this.currentY);
-            this.currentY += 12;
+            this.doc.text('AUTHORIZED SIGNATURE:', this.margin, footerAreaStart);
 
             try {
                 const signatureData = await this.loadImage(businessData.signatureUrl);
                 if (signatureData) {
-                    // Add signature image with professional sizing
-                    const signatureWidth = 50;
-                    const signatureHeight = 25;
-                    this.doc.addImage(signatureData, 'JPEG', this.margin, this.currentY, signatureWidth, signatureHeight);
-                    this.currentY += signatureHeight + 8;
+                    // Add signature image with proper sizing to fit in footer
+                    const maxSignatureWidth = 60;
+                    const maxSignatureHeight = 20;
+                    
+                    // Calculate aspect ratio and resize accordingly
+                    const img = new Image();
+                    img.src = signatureData;
+                    const aspectRatio = img.width / img.height;
+                    
+                    let signatureWidth = maxSignatureWidth;
+                    let signatureHeight = maxSignatureWidth / aspectRatio;
+                    
+                    if (signatureHeight > maxSignatureHeight) {
+                        signatureHeight = maxSignatureHeight;
+                        signatureWidth = maxSignatureHeight * aspectRatio;
+                    }
+
+                    this.doc.addImage(signatureData, 'JPEG', this.margin, footerAreaStart + 8, signatureWidth, signatureHeight);
 
                     // Add signature line below image
                     this.doc.setLineWidth(0.5);
                     this.doc.setDrawColor(0, 0, 0);
-                    this.doc.line(this.margin, this.currentY, this.margin + signatureWidth, this.currentY);
-                    this.currentY += 15;
+                    this.doc.line(this.margin, footerAreaStart + 8 + signatureHeight + 3, this.margin + signatureWidth, footerAreaStart + 8 + signatureHeight + 3);
                 } else {
                     // Professional signature line if image fails
                     this.doc.setLineWidth(0.8);
                     this.doc.setDrawColor(0, 0, 0);
-                    this.doc.line(this.margin, this.currentY, this.margin + 80, this.currentY);
-                    this.currentY += 18;
+                    this.doc.line(this.margin, footerAreaStart + 15, this.margin + 80, footerAreaStart + 15);
                 }
             } catch (error) {
                 console.warn('Failed to add signature:', error);
                 // Professional fallback signature line
                 this.doc.setLineWidth(0.8);
                 this.doc.setDrawColor(0, 0, 0);
-                this.doc.line(this.margin, this.currentY, this.margin + 80, this.currentY);
-                this.currentY += 18;
+                this.doc.line(this.margin, footerAreaStart + 15, this.margin + 80, footerAreaStart + 15);
             }
         } else {
             // Add signature section even without image
             this.setFont(this.fontSize.normal, 'bold');
-            this.doc.text('AUTHORIZED SIGNATURE:', this.margin, this.currentY);
-            this.currentY += 12;
+            this.doc.text('AUTHORIZED SIGNATURE:', this.margin, footerAreaStart);
 
             this.doc.setLineWidth(0.8);
             this.doc.setDrawColor(0, 0, 0);
-            this.doc.line(this.margin, this.currentY, this.margin + 80, this.currentY);
-            this.currentY += 18;
+            this.doc.line(this.margin, footerAreaStart + 15, this.margin + 80, footerAreaStart + 15);
         }
 
         // Professional footer with clean line
-        const footerY = this.pageHeight - 25;
         this.doc.setLineWidth(0.5);
         this.doc.setDrawColor(0, 0, 0);
-        this.doc.line(this.margin, footerY, this.pageWidth - this.margin, footerY);
+        this.doc.line(this.margin, footerLineY, this.pageWidth - this.margin, footerLineY);
 
         // Professional footer text
         this.setFont(this.fontSize.small, 'normal');
@@ -537,13 +547,41 @@ class SimplePDFGenerator {
         // Thank you message centered and professional
         const thankYou = 'Thank you for your business!';
         const textWidth = this.doc.getTextWidth(thankYou);
-        this.doc.text(thankYou, (this.pageWidth - textWidth) / 2, footerY + 10);
+        this.doc.text(thankYou, (this.pageWidth - textWidth) / 2, footerLineY + 10);
+    }
+
+    // Generate unique document number based on type
+    generateDocumentNumber(type, customNumber = null) {
+        if (customNumber) {
+            return customNumber;
+        }
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000);
+
+        const prefixes = {
+            'invoice': 'INV',
+            'quotation': 'QUO',
+            'receipt': 'RCP',
+            'purchase_order': 'PO'
+        };
+
+        const prefix = prefixes[type] || 'DOC';
+        return `${prefix}-${year}${month}${day}-${random}`;
     }
 
     // Generate complete PDF
     async generatePDF(documentData) {
         try {
             this.initializeDocument();
+
+            // Ensure document has unique number format
+            if (!documentData.number || documentData.number === '') {
+                documentData.number = this.generateDocumentNumber(documentData.type);
+            }
 
             // Set document properties
             this.doc.setProperties({
