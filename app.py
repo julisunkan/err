@@ -1165,7 +1165,7 @@ def edit_user(user_id):
             return jsonify({'success': False, 'error': 'User not found'}), 404
 
         if user.is_admin:
-            return jsonify({'success': False, 'error': 'Cannot edit admin users'}), 400
+            return jsonify({'success': False, 'error': 'Cannot edit admin users. Admin users can only be modified by other admins with appropriate permissions.'}), 400
 
         # Check if username or email already exists (excluding current user)
         existing_username = User.query.filter(User.username == data.get('username'), User.id != user_id).first()

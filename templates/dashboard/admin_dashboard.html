@@ -576,9 +576,11 @@
                                                     <button class="btn btn-sm btn-outline-info" onclick="messageUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
                                                         <i class="bi bi-envelope"></i>
                                                     </button>
+                                                    {% if not user.is_admin %}
                                                     <button class="btn btn-sm btn-outline-secondary" onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.email }}', '{{ user.first_name }}', '{{ user.last_name }}')">
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
+                                                    {% endif %}
                                                     {% if user.is_verified %}
                                                     <button class="btn btn-sm btn-outline-warning" onclick="toggleVerification({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}', false)">
                                                         <i class="bi bi-shield-x"></i>
