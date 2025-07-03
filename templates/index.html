@@ -1818,8 +1818,8 @@
 
             // Generate PDF using enhanced PDF generator
             async function generatePDF() {
-                if (!window.MinimalPDFGenerator || !window.MinimalPDFGenerator.ready) {
-                    showNotification('PDF generator not ready', 'error');
+                if (!window.MinimalPDFGenerator || !window.MinimalPDFGenerator.isReady || !window.MinimalPDFGenerator.isReady()) {
+                    showNotification('PDF generator not ready. Please wait a moment and try again.', 'error');
                     return;
                 }
 

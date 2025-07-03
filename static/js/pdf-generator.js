@@ -654,7 +654,9 @@ class MinimalPDFGenerator {
 
 // Initialize and expose globally
 console.log('Loading Minimal PDF Generator...');
-window.EnhancedPDFGenerator = new MinimalPDFGenerator();
+const pdfGenerator = new MinimalPDFGenerator();
+window.EnhancedPDFGenerator = pdfGenerator;
+window.MinimalPDFGenerator = pdfGenerator;
 console.log('MinimalPDFGenerator initialized');
 
 // Wait for jsPDF to be available
