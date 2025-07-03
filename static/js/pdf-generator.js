@@ -1,6 +1,6 @@
-// Simple Receipt PDF Generator - Black and White Design
-// PDF Generator using jsPDF
-console.log('Loading Simple PDF Generator...');
+// Professional Business Documents PDF Generator - Clean Black and White Design
+// PDF Generator using jsPDF - Version 2.0
+console.log('Loading Professional PDF Generator v2.0...');
 
 // Ensure jsPDF is available
 function ensureJsPDFLoaded() {
@@ -15,16 +15,16 @@ class SimplePDFGenerator {
         this.doc = null;
         this.pageWidth = 210; // A4 width in mm
         this.pageHeight = 297; // A4 height in mm
-        this.margin = 20;
+        this.margin = 25; // Increased margin for professional look
         this.currentY = this.margin;
-        this.lineHeight = 6;
+        this.lineHeight = 7; // Better line spacing
         this.fontSize = {
-            title: 16,
-            subtitle: 12,
-            normal: 10,
+            title: 18,
+            subtitle: 14,
+            normal: 11,
             small: 9
         };
-        console.log('SimplePDFGenerator initialized');
+        console.log('Professional PDF Generator v2.0 initialized');
         this.ready = false;
         this.checkJsPDF();
     }
@@ -116,14 +116,19 @@ class SimplePDFGenerator {
         let headerY = this.currentY;
         let logoAdded = false;
 
-        // Add business logo if available - positioned at top right
+        // Add business logo if available - positioned at top right with better sizing
         if (businessData.businessLogoUrl && businessData.businessLogoUrl.trim()) {
             try {
                 const logoData = await this.loadImage(businessData.businessLogoUrl);
                 if (logoData) {
-                    const logoSize = 30; // Larger logo size for professional look
+                    const logoSize = 35; // Professional logo size
                     const logoX = this.pageWidth - this.margin - logoSize;
 
+                    // Add subtle border around logo
+                    this.doc.setLineWidth(0.5);
+                    this.doc.setDrawColor(200, 200, 200);
+                    this.doc.rect(logoX - 2, headerY - 2, logoSize + 4, logoSize + 4);
+                    
                     this.doc.addImage(logoData, 'JPEG', logoX, headerY, logoSize, logoSize);
                     logoAdded = true;
                 }
@@ -132,16 +137,23 @@ class SimplePDFGenerator {
             }
         }
 
-        // Company name - prominent and professional
+        // Company name - prominent and professional with better styling
         if (businessData.businessName) {
             this.setFont(this.fontSize.title, 'bold');
-            const maxNameWidth = logoAdded ? this.pageWidth - (2 * this.margin) - 35 : this.pageWidth - (2 * this.margin);
+            const maxNameWidth = logoAdded ? this.pageWidth - (2 * this.margin) - 40 : this.pageWidth - (2 * this.margin);
             const nameLines = this.doc.splitTextToSize(businessData.businessName, maxNameWidth);
 
+            // Add company name with enhanced spacing
             for (let i = 0; i < nameLines.length; i++) {
-                this.doc.text(nameLines[i], this.margin, headerY + 5 + (i * 8));
+                this.doc.text(nameLines[i], this.margin, headerY + 8 + (i * 10));
             }
-            headerY += (nameLines.length * 8) + 8;
+            headerY += (nameLines.length * 10) + 12;
+            
+            // Add subtle underline for company name
+            this.doc.setLineWidth(0.8);
+            this.doc.setDrawColor(0, 0, 0);
+            this.doc.line(this.margin, headerY - 5, this.margin + (maxNameWidth * 0.6), headerY - 5);
+            headerY += 5;
         }
 
         // Adjust headerY if logo was added to ensure proper spacing
@@ -285,18 +297,22 @@ class SimplePDFGenerator {
             currentX += col.width;
         });
 
-        // Table header with professional styling
+        // Table header with enhanced professional styling
         this.setFont(this.fontSize.normal, 'bold');
-        const headerY = this.currentY + 6;
+        const headerY = this.currentY + 8;
 
-        // Clean header background - light gray for contrast
-        this.doc.setFillColor(245, 245, 245);
-        this.doc.rect(tableX, headerY - 4, tableWidth, headerHeight, 'F');
+        // Professional header background - darker gray for better contrast
+        this.doc.setFillColor(240, 240, 240);
+        this.doc.rect(tableX, headerY - 6, tableWidth, headerHeight + 2, 'F');
 
-        // Header border
-        this.doc.setLineWidth(1);
+        // Strong header border with double line effect
+        this.doc.setLineWidth(1.5);
         this.doc.setDrawColor(0, 0, 0);
-        this.doc.rect(tableX, headerY - 4, tableWidth, headerHeight);
+        this.doc.rect(tableX, headerY - 6, tableWidth, headerHeight + 2);
+        
+        // Inner border for professional look
+        this.doc.setLineWidth(0.5);
+        this.doc.rect(tableX + 1, headerY - 5, tableWidth - 2, headerHeight);
 
         // Draw clean vertical lines for columns
         let lineX = tableX;
