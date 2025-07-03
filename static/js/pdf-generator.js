@@ -1,4 +1,15 @@
 // Simple Receipt PDF Generator - Black and White Design
+// PDF Generator using jsPDF
+console.log('Loading Simple PDF Generator...');
+
+// Ensure jsPDF is available
+function ensureJsPDFLoaded() {
+    if (typeof window.jsPDF === 'undefined' && typeof window.jspdf !== 'undefined') {
+        window.jsPDF = window.jspdf.jsPDF;
+    }
+    return typeof window.jsPDF !== 'undefined';
+}
+
 class SimplePDFGenerator {
     constructor() {
         this.doc = null;
@@ -13,6 +24,9 @@ class SimplePDFGenerator {
             normal: 10,
             small: 9
         };
+        console.log('SimplePDFGenerator initialized');
+        this.ready = false;
+        this.checkJsPDF();
     }
 
     // Initialize new PDF document
@@ -498,7 +512,7 @@ class SimplePDFGenerator {
                 // Add generation info with username (requirement #5)
                 const generatedDate = new Date().toLocaleDateString();
                 let currentUsername = 'Unknown User';
-                
+
                 // Try to get username from various sources
                 try {
                     const response = await fetch('/api/get-current-user');
@@ -511,7 +525,7 @@ class SimplePDFGenerator {
                 } catch (error) {
                     console.warn('Could not fetch current user:', error);
                 }
-                
+
                 this.doc.text(`Generated on ${generatedDate} by ${currentUsername}`, 20, this.pageHeight - 10);
             }
 
@@ -600,6 +614,30 @@ class SimplePDFGenerator {
         } catch (error) {
             return dateString;
         }
+    }
+
+    checkJsPDF() {
+        // Wait for jsPDF to be available
+        const checkInterval = setInterval(() => {
+            if (ensureJsPDFLoaded() && typeof window.jsPDF !== 'undefined') {
+                clearInterval(checkInterval);
+                this.ready = true;
+                console.log('SimplePDFGenerator ready');
+            }
+        }, 100);
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+            if (!this.ready) {
+                clearInterval(checkInterval);
+                console.error('jsPDF not loaded after 10 seconds');
+                // Try one more time to ensure jsPDF
+                if (ensureJsPDFLoaded()) {
+                    this.ready = true;
+                    console.log('SimplePDFGenerator ready (fallback)');
+                }
+            }
+        }, 10000);
     }
 }
 
