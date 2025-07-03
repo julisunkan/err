@@ -483,35 +483,11 @@ class SimplePDFGenerator {
             this.doc.text('AUTHORIZED SIGNATURE:', this.margin, this.currentY);
             this.currentY += 12;
 
-            try {
-                const signatureData = await this.loadImage(businessData.signatureUrl);
-                if (signatureData) {
-                    // Add signature image with professional sizing
-                    const signatureWidth = 50;
-                    const signatureHeight = 25;
-                    this.doc.addImage(signatureData, 'JPEG', this.margin, this.currentY, signatureWidth, signatureHeight);
-                    this.currentY += signatureHeight + 8;
-
-                    // Add signature line below image
-                    this.doc.setLineWidth(0.5);
-                    this.doc.setDrawColor(0, 0, 0);
-                    this.doc.line(this.margin, this.currentY, this.margin + signatureWidth, this.currentY);
-                    this.currentY += 15;
-                } else {
-                    // Professional signature line if image fails
-                    this.doc.setLineWidth(0.8);
-                    this.doc.setDrawColor(0, 0, 0);
-                    this.doc.line(this.margin, this.currentY, this.margin + 80, this.currentY);
-                    this.currentY += 18;
-                }
-            } catch (error) {
-                console.warn('Failed to add signature:', error);
-                // Professional fallback signature line
-                this.doc.setLineWidth(0.8);
-                this.doc.setDrawColor(0, 0, 0);
-                this.doc.line(this.margin, this.currentY, this.margin + 80, this.currentY);
-                this.currentY += 18;
-            }
+            // Add signature line placeholder
+            this.doc.setLineWidth(0.8);
+            this.doc.setDrawColor(0, 0, 0);
+            this.doc.line(this.margin, this.currentY, this.margin + 80, this.currentY);
+            this.currentY += 18;
         } else {
             // Add signature section even without image
             this.setFont(this.fontSize.normal, 'bold');
@@ -525,19 +501,42 @@ class SimplePDFGenerator {
         }
 
         // Professional footer with clean line
-        const footerY = this.pageHeight - 25;
+        const footerY = this.pageHeight - 50; // Increased space for signature
         this.doc.setLineWidth(0.5);
         this.doc.setDrawColor(0, 0, 0);
         this.doc.line(this.margin, footerY, this.pageWidth - this.margin, footerY);
 
-        // Professional footer text
+        // Add signature image in footer if available
+        if (businessData.signatureUrl && businessData.signatureUrl.trim()) {
+            try {
+                const signatureData = await this.loadImage(businessData.signatureUrl);
+                if (signatureData) {
+                    // Smaller signature for footer - properly sized
+                    const signatureWidth = 40;
+                    const signatureHeight = 20;
+                    const signatureX = this.margin;
+                    const signatureY = footerY + 5;
+                    
+                    this.doc.addImage(signatureData, 'JPEG', signatureX, signatureY, signatureWidth, signatureHeight);
+                    
+                    // Add signature label below image
+                    this.setFont(this.fontSize.small, 'normal');
+                    this.doc.setTextColor(100, 100, 100);
+                    this.doc.text('Authorized Signature', signatureX, signatureY + signatureHeight + 8);
+                }
+            } catch (error) {
+                console.warn('Failed to add signature to footer:', error);
+            }
+        }
+
+        // Professional footer text - moved to accommodate signature
         this.setFont(this.fontSize.small, 'normal');
         this.doc.setTextColor(100, 100, 100);
 
         // Thank you message centered and professional
         const thankYou = 'Thank you for your business!';
         const textWidth = this.doc.getTextWidth(thankYou);
-        this.doc.text(thankYou, (this.pageWidth - textWidth) / 2, footerY + 10);
+        this.doc.text(thankYou, (this.pageWidth - textWidth) / 2, footerY + 35);
     }
 
     // Generate complete PDF
