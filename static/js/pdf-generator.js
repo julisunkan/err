@@ -1,632 +1,77 @@
-// Professional Business Documents PDF Generator - Clean Black and White Design
-// PDF Generator using jsPDF - Version 2.0
+// Professional PDF Generator v2.0
 console.log('Loading Professional PDF Generator v2.0...');
 
-// Ensure jsPDF is available
-function ensureJsPDFLoaded() {
-    if (typeof window.jsPDF === 'undefined' && typeof window.jspdf !== 'undefined') {
-        window.jsPDF = window.jspdf.jsPDF;
-    }
-    return typeof window.jsPDF !== 'undefined';
+// Wait for jsPDF to be ready
+function waitForJsPDF() {
+    return typeof window.jspdf !== 'undefined' && 
+           typeof window.jspdf.jsPDF !== 'undefined';
 }
 
-class SimplePDFGenerator {
+// Enhanced PDF Generator Class
+class EnhancedPDFGenerator {
     constructor() {
+        this.ready = false;
         this.doc = null;
         this.pageWidth = 210; // A4 width in mm
         this.pageHeight = 297; // A4 height in mm
-        this.margin = 25; // Increased margin for professional look
-        this.currentY = this.margin;
-        this.lineHeight = 7; // Better line spacing
-        this.fontSize = {
-            title: 18,
-            subtitle: 14,
-            normal: 11,
-            small: 9
-        };
-        console.log('Professional PDF Generator v2.0 initialized');
-        this.ready = false;
-        this.checkJsPDF();
+        this.margin = 20;
+        this.init();
     }
 
-    // Initialize new PDF document
-    initializeDocument() {
-        if (typeof window.jsPDF === 'undefined') {
-            throw new Error('jsPDF library not loaded');
-        }
-        this.doc = new window.jsPDF('p', 'mm', 'a4');
-        this.currentY = this.margin;
-        return this.doc;
-    }
+    async init() {
+        // Wait for jsPDF to be available
+        let attempts = 0;
+        const maxAttempts = 50;
 
-    // Set font with size and style
-    setFont(size, style = 'normal') {
-        this.doc.setFontSize(size);
-        this.doc.setFont('helvetica', style);
-        this.doc.setTextColor(0, 0, 0); // Always black
-    }
-
-    // Add text with proper spacing
-    addText(text, x, y, options = {}) {
-        const {
-            maxWidth = this.pageWidth - (2 * this.margin),
-            align = 'left'
-        } = options;
-
-        if (!text) return y;
-
-        const lines = this.doc.splitTextToSize(String(text), maxWidth);
-
-        for (let i = 0; i < lines.length; i++) {
-            const lineY = y + (i * this.lineHeight);
-
-            let xPos = x;
-            if (align === 'center') {
-                xPos = x + (maxWidth / 2) - (this.doc.getTextWidth(lines[i]) / 2);
-            } else if (align === 'right') {
-                xPos = x + maxWidth - this.doc.getTextWidth(lines[i]);
-            }
-
-            this.doc.text(lines[i], xPos, lineY);
+        while (!waitForJsPDF() && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
         }
 
-        return y + (lines.length * this.lineHeight);
-    }
-
-    // Load image from URL
-    async loadImage(url) {
-        return new Promise((resolve, reject) => {
-            if (!url || !url.trim()) {
-                resolve(null);
-                return;
-            }
-
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-
-                canvas.width = img.width;
-                canvas.height = img.height;
-
-                ctx.drawImage(img, 0, 0);
-
-                try {
-                    const dataURL = canvas.toDataURL('image/jpeg', 0.8);
-                    resolve(dataURL);
-                } catch (error) {
-                    console.warn('Failed to convert image to dataURL:', error);
-                    resolve(null);
-                }
-            };
-
-            img.onerror = () => {
-                console.warn('Failed to load image:', url);
-                resolve(null);
-            };
-
-            img.src = url;
-        });
-    }
-
-    // Add professional header with logo support
-    async addSimpleHeader(businessData) {
-        let headerY = this.currentY;
-        let logoAdded = false;
-
-        // Add business logo if available - positioned at top right with better sizing
-        if (businessData.businessLogoUrl && businessData.businessLogoUrl.trim()) {
-            try {
-                const logoData = await this.loadImage(businessData.businessLogoUrl);
-                if (logoData) {
-                    const logoSize = 35; // Professional logo size
-                    const logoX = this.pageWidth - this.margin - logoSize;
-
-                    // Add subtle border around logo
-                    this.doc.setLineWidth(0.5);
-                    this.doc.setDrawColor(200, 200, 200);
-                    this.doc.rect(logoX - 2, headerY - 2, logoSize + 4, logoSize + 4);
-
-                    this.doc.addImage(logoData, 'JPEG', logoX, headerY, logoSize, logoSize);
-                    logoAdded = true;
-                }
-            } catch (error) {
-                console.warn('Failed to add logo:', error);
-            }
-        }
-
-        // Company name - prominent and professional with better styling
-        if (businessData.businessName) {
-            this.setFont(this.fontSize.title, 'bold');
-            const maxNameWidth = logoAdded ? this.pageWidth - (2 * this.margin) - 40 : this.pageWidth - (2 * this.margin);
-            const nameLines = this.doc.splitTextToSize(businessData.businessName, maxNameWidth);
-
-            // Add company name with enhanced spacing
-            for (let i = 0; i < nameLines.length; i++) {
-                this.doc.text(nameLines[i], this.margin, headerY + 8 + (i * 10));
-            }
-            headerY += (nameLines.length * 10) + 12;
-
-            // Add subtle underline for company name
-            this.doc.setLineWidth(0.8);
-            this.doc.setDrawColor(0, 0, 0);
-            this.doc.line(this.margin, headerY - 5, this.margin + (maxNameWidth * 0.6), headerY - 5);
-            headerY += 5;
-        }
-
-        // Adjust headerY if logo was added to ensure proper spacing
-        if (logoAdded) {
-            headerY = Math.max(headerY, this.currentY + 35);
-        }
-
-        // Company details section with proper spacing
-        this.setFont(this.fontSize.normal, 'normal');
-
-        // Business address with proper line spacing
-        if (businessData.businessAddress) {
-            const maxAddressWidth = this.pageWidth - (2 * this.margin);
-            const addressLines = this.doc.splitTextToSize(businessData.businessAddress, maxAddressWidth);
-
-            for (let i = 0; i < addressLines.length; i++) {
-                this.doc.text(addressLines[i], this.margin, headerY + (i * 6));
-            }
-            headerY += (addressLines.length * 6) + 4;
-        }
-
-        // Contact information with professional formatting
-        if (businessData.businessPhone || businessData.businessEmail) {
-            const contactY = headerY;
-
-            if (businessData.businessPhone) {
-                this.doc.text(`Phone: ${businessData.businessPhone}`, this.margin, contactY);
-                headerY += 6;
-            }
-
-            if (businessData.businessEmail) {
-                this.doc.text(`Email: ${businessData.businessEmail}`, this.margin, headerY);
-                headerY += 6;
-            }
-        }
-
-        // Professional separator line with proper spacing
-        headerY += 8;
-        this.doc.setLineWidth(1);
-        this.doc.setDrawColor(0, 0, 0);
-        this.doc.line(this.margin, headerY, this.pageWidth - this.margin, headerY);
-
-        this.currentY = headerY + 20;
-    }
-
-    // Add document title and details
-    addDocumentSection(documentData) {
-        const sectionY = this.currentY;
-
-        // Document type - left aligned
-        this.setFont(this.fontSize.subtitle, 'bold');
-        const docType = documentData.type.charAt(0).toUpperCase() + 
-                       documentData.type.slice(1).replace('_', ' ');
-        this.doc.text(docType.toUpperCase(), this.margin, sectionY);
-
-        // Document number and date - right aligned
-        this.setFont(this.fontSize.normal, 'normal');
-
-        const rightX = this.pageWidth - this.margin;
-
-        // Document number
-        const docNumberText = `#${documentData.number}`;
-        const docNumberWidth = this.doc.getTextWidth(docNumberText);
-        this.doc.text(docNumberText, rightX - docNumberWidth, sectionY);
-
-        // Date - properly aligned below document number
-        const formattedDate = this.formatDate(documentData.date);
-        const dateWidth = this.doc.getTextWidth(formattedDate);
-        this.doc.text(formattedDate, rightX - dateWidth, sectionY + 6);
-
-        this.currentY = sectionY + 20;
-    }
-
-    // Add client information with professional formatting
-    addClientSection(clientData) {
-        // Bill To section header
-        this.setFont(this.fontSize.subtitle, 'bold');
-        this.doc.text('BILL TO:', this.margin, this.currentY);
-        this.currentY += 12;
-
-        // Client name - prominent
-        if (clientData.name) {
-            this.setFont(this.fontSize.normal, 'bold');
-            this.doc.text(clientData.name, this.margin, this.currentY);
-            this.currentY += 8;
-        }
-
-        // Client address with proper spacing
-        if (clientData.address) {
-            this.setFont(this.fontSize.normal, 'normal');
-            const maxAddressWidth = this.pageWidth - (2 * this.margin);
-            const addressLines = this.doc.splitTextToSize(clientData.address, maxAddressWidth);
-
-            for (let i = 0; i < addressLines.length; i++) {
-                this.doc.text(addressLines[i], this.margin, this.currentY + (i * 6));
-            }
-            this.currentY += (addressLines.length * 6) + 4;
-        }
-
-        // Client contact information - properly formatted
-        this.setFont(this.fontSize.normal, 'normal');
-        if (clientData.phone) {
-            this.doc.text(`Phone: ${clientData.phone}`, this.margin, this.currentY);
-            this.currentY += 6;
-        }
-
-        if (clientData.email) {
-            this.doc.text(`Email: ${clientData.email}`, this.margin, this.currentY);
-            this.currentY += 6;
-        }
-
-        this.currentY += 15;
-    }
-
-    // Professional items table with clean formatting
-    addSimpleItemsTable(items, currency = 'USD') {
-        if (!items || items.length === 0) {
-            this.setFont(this.fontSize.normal, 'normal');
-            this.doc.text('No items added', this.margin, this.currentY);
-            this.currentY += 15;
-            return;
-        }
-
-        const tableX = this.margin;
-        const tableWidth = this.pageWidth - (2 * this.margin);
-        const rowHeight = 10;
-        const headerHeight = 12;
-
-        // Define column structure with optimized widths for better readability
-        const columns = [
-            { name: 'DESCRIPTION', width: tableWidth * 0.48, align: 'left' },
-            { name: 'QTY', width: tableWidth * 0.12, align: 'center' },
-            { name: 'UNIT PRICE', width: tableWidth * 0.20, align: 'right' },
-            { name: 'AMOUNT', width: tableWidth * 0.20, align: 'right' }
-        ];
-
-        // Calculate column positions
-        let currentX = tableX;
-        columns.forEach(col => {
-            col.x = currentX;
-            currentX += col.width;
-        });
-
-        // Table header with enhanced professional styling
-        this.setFont(this.fontSize.normal, 'bold');
-        const headerY = this.currentY + 8;
-
-        // Professional header background - darker gray for better contrast
-        this.doc.setFillColor(240, 240, 240);
-        this.doc.rect(tableX, headerY - 6, tableWidth, headerHeight + 2, 'F');
-
-        // Strong header border with double line effect
-        this.doc.setLineWidth(1.5);
-        this.doc.setDrawColor(0, 0, 0);
-        this.doc.rect(tableX, headerY - 6, tableWidth, headerHeight + 2);
-
-        // Inner border for professional look
-        this.doc.setLineWidth(0.5);
-        this.doc.rect(tableX + 1, headerY - 5, tableWidth - 2, headerHeight);
-
-        // Draw clean vertical lines for columns
-        let lineX = tableX;
-        for (let i = 1; i < columns.length; i++) {
-            lineX += columns[i-1].width;
-            this.doc.line(lineX, headerY - 4, lineX, headerY + headerHeight - 4);
-        }
-
-        // Header text with proper alignment
-        columns.forEach(col => {
-            let textX = col.x + 4; // Left padding
-            if (col.align === 'center') {
-                textX = col.x + (col.width / 2);
-            } else if (col.align === 'right') {
-                textX = col.x + col.width - 4; // Right padding
-            }
-
-            if (col.align === 'center') {
-                const textWidth = this.doc.getTextWidth(col.name);
-                textX -= textWidth / 2;
-            } else if (col.align === 'right') {
-                textX -= this.doc.getTextWidth(col.name);
-            }
-
-            this.doc.text(col.name, textX, headerY + 2);
-        });
-
-        this.currentY = headerY + headerHeight + 2;
-
-        // Table rows with clean styling
-        this.setFont(this.fontSize.normal, 'normal');
-
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            const price = parseFloat(item.price) || 0;
-            const quantity = parseFloat(item.quantity) || 0;
-            const total = price * quantity;
-
-            const rowY = this.currentY + 3;
-
-            // Row border
-            this.doc.setLineWidth(0.3);
-            this.doc.setDrawColor(200, 200, 200);
-            this.doc.rect(tableX, rowY - 2, tableWidth, rowHeight);
-
-            // Column separators
-            let lineX = tableX;
-            for (let j = 1; j < columns.length; j++) {
-                lineX += columns[j-1].width;
-                this.doc.line(lineX, rowY - 2, lineX, rowY + rowHeight - 2);
-            }
-
-            // Row data with proper formatting
-            const rowData = [
-                item.description || 'No description',
-                quantity.toString(),
-                this.formatCurrency(price, currency),
-                this.formatCurrency(total, currency)
-            ];
-
-            // Draw each cell with proper alignment and padding
-            columns.forEach((col, colIndex) => {
-                let text = rowData[colIndex];
-                let textX = col.x + 4; // Left padding
-
-                // Truncate description if too long with ellipsis
-                if (colIndex === 0) {
-                    const maxWidth = col.width - 8;
-                    const textWidth = this.doc.getTextWidth(text);
-                    if (textWidth > maxWidth) {
-                        while (this.doc.getTextWidth(text + '...') > maxWidth && text.length > 0) {
-                            text = text.slice(0, -1);
-                        }
-                        text += '...';
-                    }
-                }
-
-                // Adjust text position based on alignment
-                if (col.align === 'center') {
-                    textX = col.x + (col.width / 2);
-                    const textWidth = this.doc.getTextWidth(text);
-                    textX -= textWidth / 2;
-                } else if (col.align === 'right') {
-                    textX = col.x + col.width - 4 - this.doc.getTextWidth(text);
-                }
-
-                this.doc.text(text, textX, rowY + 3);
-            });
-
-            this.currentY += rowHeight;
-        }
-
-        // Final table border
-        this.doc.setLineWidth(1);
-        this.doc.setDrawColor(0, 0, 0);
-        this.doc.line(tableX, this.currentY + 2, tableX + tableWidth, this.currentY + 2);
-
-        this.currentY += 20;
-    }
-
-    // Simple totals section
-    addSimpleTotals(totals, currency = 'USD') {
-        const rightX = this.pageWidth - this.margin;
-        const labelX = rightX - 60;
-
-        this.setFont(this.fontSize.normal, 'normal');
-
-        // Subtotal
-        const subtotal = parseFloat(totals.subtotal) || 0;
-        this.doc.text('Subtotal:', labelX, this.currentY);
-        const subtotalText = this.formatCurrency(subtotal, currency);
-        const subtotalWidth = this.doc.getTextWidth(subtotalText);
-        this.doc.text(subtotalText, rightX - subtotalWidth, this.currentY);
-        this.currentY += 8;
-
-        // Tax if applicable
-        if (totals.taxRate > 0) {
-            const docTaxRate = parseFloat(totals.taxRate) || 0;
-            const taxAmount = subtotal * (docTaxRate / 100);
-            this.doc.text(`Tax (${docTaxRate}%):`, labelX, this.currentY);
-            const taxText = this.formatCurrency(taxAmount, currency);
-            const taxWidth = this.doc.getTextWidth(taxText);
-            this.doc.text(taxText, rightX - taxWidth, this.currentY);
-            this.currentY += 8;
-        }
-
-        // Separator line
-        this.doc.setLineWidth(0.5);
-        this.doc.line(labelX, this.currentY + 2, rightX, this.currentY + 2);
-        this.currentY += 10;
-
-        // Grand total
-        const grandTotal = parseFloat(totals.grandTotal) || 
-                          subtotal + (subtotal * (parseFloat(totals.taxRate || 0) / 100));
-
-        this.setFont(this.fontSize.normal, 'bold');
-        this.doc.text('TOTAL:', labelX, this.currentY);
-        const totalText = this.formatCurrency(grandTotal, currency);
-        const totalWidth = this.doc.getTextWidth(totalText);
-        this.doc.text(totalText, rightX - totalWidth, this.currentY);
-
-        this.currentY += 20;
-    }
-
-    // Professional footer with signature and notes
-    async addSimpleFooter(businessData, notes = '') {
-        // Notes section with professional formatting
-        if (notes && notes.trim()) {
-            this.setFont(this.fontSize.normal, 'bold');
-            this.doc.text('NOTES:', this.margin, this.currentY);
-            this.currentY += 8;
-
-            this.setFont(this.fontSize.normal, 'normal');
-            const maxWidth = this.pageWidth - (2 * this.margin);
-            const noteLines = this.doc.splitTextToSize(notes, maxWidth);
-
-            // Add notes with proper line spacing
-            for (let i = 0; i < noteLines.length && i < 4; i++) {
-                this.doc.text(noteLines[i], this.margin, this.currentY);
-                this.currentY += 6;
-            }
-
-            this.currentY += 15;
-        }
-
-        // Calculate footer area - reserve space at bottom
-        const footerAreaStart = this.pageHeight - 60;
-        const footerLineY = this.pageHeight - 35;
-
-        // Professional signature section - positioned in footer area
-        if (businessData.signatureUrl && businessData.signatureUrl.trim()) {
-            this.setFont(this.fontSize.normal, 'bold');
-            this.doc.text('AUTHORIZED SIGNATURE:', this.margin, footerAreaStart);
-
-            try {
-                const signatureData = await this.loadImage(businessData.signatureUrl);
-                if (signatureData) {
-                    // Add signature image with proper sizing to fit in footer
-                    const maxSignatureWidth = 60;
-                    const maxSignatureHeight = 20;
-
-                    // Calculate aspect ratio and resize accordingly
-                    const img = new Image();
-                    img.src = signatureData;
-                    const aspectRatio = img.width / img.height;
-
-                    let signatureWidth = maxSignatureWidth;
-                    let signatureHeight = maxSignatureWidth / aspectRatio;
-
-                    if (signatureHeight > maxSignatureHeight) {
-                        signatureHeight = maxSignatureHeight;
-                        signatureWidth = maxSignatureHeight * aspectRatio;
-                    }
-
-                    this.doc.addImage(signatureData, 'JPEG', this.margin, footerAreaStart + 8, signatureWidth, signatureHeight);
-
-                    // Add signature line below image
-                    this.doc.setLineWidth(0.5);
-                    this.doc.setDrawColor(0, 0, 0);
-                    this.doc.line(this.margin, footerAreaStart + 8 + signatureHeight + 3, this.margin + signatureWidth, footerAreaStart + 8 + signatureHeight + 3);
-                } else {
-                    // Professional signature line if image fails
-                    this.doc.setLineWidth(0.8);
-                    this.doc.setDrawColor(0, 0, 0);
-                    this.doc.line(this.margin, footerAreaStart + 15, this.margin + 80, footerAreaStart + 15);
-                }
-            } catch (error) {
-                console.warn('Failed to add signature:', error);
-                // Professional fallback signature line
-                this.doc.setLineWidth(0.8);
-                this.doc.setDrawColor(0, 0, 0);
-                this.doc.line(this.margin, footerAreaStart + 15, this.margin + 80, footerAreaStart + 15);
-            }
+        if (waitForJsPDF()) {
+            this.ready = true;
+            console.log('Professional PDF Generator v2.0 initialized');
         } else {
-            // Add signature section even without image
-            this.setFont(this.fontSize.normal, 'bold');
-            this.doc.text('AUTHORIZED SIGNATURE:', this.margin, footerAreaStart);
-
-            this.doc.setLineWidth(0.8);
-            this.doc.setDrawColor(0, 0, 0);
-            this.doc.line(this.margin, footerAreaStart + 15, this.margin + 80, footerAreaStart + 15);
+            console.error('Failed to initialize PDF generator - jsPDF not available');
         }
-
-        // Professional footer with clean line
-        this.doc.setLineWidth(0.5);
-        this.doc.setDrawColor(0, 0, 0);
-        this.doc.line(this.margin, footerLineY, this.pageWidth - this.margin, footerLineY);
-
-        // Professional footer text
-        this.setFont(this.fontSize.small, 'normal');
-        this.doc.setTextColor(100, 100, 100);
-
-        // Thank you message centered and professional
-        const thankYou = 'Thank you for your business!';
-        const textWidth = this.doc.getTextWidth(thankYou);
-        this.doc.text(thankYou, (this.pageWidth - textWidth) / 2, footerLineY + 10);
     }
 
-    // Generate unique document number based on type
-    generateDocumentNumber(type, customNumber = null) {
-        if (customNumber) {
-            return customNumber;
-        }
-
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const random = Math.floor(Math.random() * 1000);
-
-        const prefixes = {
-            'invoice': 'INV',
-            'quotation': 'QUO',
-            'receipt': 'RCP',
-            'purchase_order': 'PO'
-        };
-
-        const prefix = prefixes[type] || 'DOC';
-        return `${prefix}-${year}${month}${day}-${random}`;
-    }
-
-    // Generate complete PDF
+    // Generate PDF
     async generatePDF(documentData) {
+        if (!this.ready || !waitForJsPDF()) {
+            throw new Error('PDF generator not ready');
+        }
+
         try {
-            this.initializeDocument();
+            this.doc = new window.jspdf.jsPDF();
 
-            // Ensure document has unique number format
-            if (!documentData.number || documentData.number === '') {
-                documentData.number = this.generateDocumentNumber(documentData.type);
+            // Set up fonts and styles
+            this.doc.setFont('helvetica');
+
+            let yPosition = this.margin;
+
+            // Header section
+            yPosition = await this.addHeader(documentData, yPosition);
+
+            // Document info section
+            yPosition = this.addDocumentInfo(documentData, yPosition);
+
+            // Client section
+            yPosition = this.addClientSection(documentData, yPosition);
+
+            // Items table
+            yPosition = this.addItemsTable(documentData, yPosition);
+
+            // Totals section
+            yPosition = this.addTotals(documentData, yPosition);
+
+            // Notes section
+            if (documentData.notes && documentData.notes.trim()) {
+                yPosition = this.addNotes(documentData, yPosition);
             }
 
-            // Set document properties
-            this.doc.setProperties({
-                title: `${documentData.type} ${documentData.number}`,
-                subject: documentData.type,
-                author: documentData.business.businessName || 'Business Documents Generator',
-                creator: 'Simple PDF Generator'
-            });
-
-            // Add sections
-            await this.addSimpleHeader(documentData.business);
-            this.addDocumentSection(documentData);
-            this.addClientSection(documentData);
-            this.addSimpleItemsTable(documentData.items, documentData.business.currency);
-            this.addSimpleTotals(documentData.totals, documentData.business.currency);
-            await this.addSimpleFooter(documentData.business, documentData.notes);
-
-            // Add footer with page numbers and username
-            const pageCount = this.doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i++) {
-                this.doc.setPage(i);
-                this.doc.setFontSize(8);
-                this.doc.setTextColor(128, 128, 128);
-                this.doc.text(`Page ${i} of ${pageCount}`, this.pageWidth - 20, this.pageHeight - 10, { align: 'right' });
-
-                // Add generation info
-                const generatedDate = new Date().toLocaleDateString();
-                let currentUsername = 'Unknown User';
-
-                // Try to get username from various sources
-                try {
-                    const response = await fetch('/api/get-current-user');
-                    if (response.ok) {
-                        const userData = await response.json();
-                        if (userData.success) {
-                            currentUsername = userData.username;
-                        }
-                    }
-                } catch (error) {
-                    console.warn('Could not fetch current user:', error);
-                }
-
-                this.doc.text(`Generated on ${generatedDate} by ${currentUsername}`, 20, this.pageHeight - 10);
-            }
+            // Footer with signature
+            this.addFooter(documentData);
 
             return this.doc;
 
@@ -634,6 +79,246 @@ class SimplePDFGenerator {
             console.error('Error generating PDF:', error);
             throw error;
         }
+    }
+
+    // Add header with business info and logo
+    async addHeader(documentData, yPosition) {
+        const business = documentData.business;
+
+        // Company name
+        this.doc.setFontSize(18);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.text(business.businessName || 'Your Business Name', this.margin, yPosition);
+
+        // Add logo if available
+        if (business.businessLogoUrl && business.businessLogoUrl.trim()) {
+            try {
+                const logoImg = await this.loadImage(business.businessLogoUrl);
+                if (logoImg) {
+                    const logoSize = 25;
+                    this.doc.addImage(logoImg, 'JPEG', this.pageWidth - this.margin - logoSize, yPosition - 15, logoSize, logoSize);
+                }
+            } catch (error) {
+                console.warn('Could not load business logo:', error);
+            }
+        }
+
+        yPosition += 12;
+
+        // Company details
+        this.doc.setFontSize(10);
+        this.doc.setFont('helvetica', 'normal');
+
+        const addressLines = (business.businessAddress || 'Your Business Address').split('\n');
+        addressLines.forEach(line => {
+            this.doc.text(line.trim(), this.margin, yPosition);
+            yPosition += 5;
+        });
+
+        this.doc.text(business.businessPhone || 'Your Phone', this.margin, yPosition);
+        yPosition += 5;
+        this.doc.text(business.businessEmail || 'your@email.com', this.margin, yPosition);
+        yPosition += 15;
+
+        // Header line
+        this.doc.setLineWidth(0.5);
+        this.doc.line(this.margin, yPosition, this.pageWidth - this.margin, yPosition);
+        yPosition += 15;
+
+        return yPosition;
+    }
+
+    // Add document info
+    addDocumentInfo(documentData, yPosition) {
+        const docTypeDisplay = documentData.type.charAt(0).toUpperCase() + documentData.type.slice(1).replace('_', ' ');
+
+        // Document title
+        this.doc.setFontSize(16);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.text(docTypeDisplay.toUpperCase(), this.margin, yPosition);
+
+        // Document details (right aligned)
+        this.doc.setFontSize(10);
+        this.doc.setFont('helvetica', 'normal');
+        const rightX = this.pageWidth - this.margin;
+
+        this.doc.text('#' + (documentData.number || 'DOC-001'), rightX, yPosition, { align: 'right' });
+        yPosition += 8;
+        this.doc.text('Date: ' + (documentData.date || new Date().toISOString().split('T')[0]), rightX, yPosition, { align: 'right' });
+
+        yPosition += 20;
+        return yPosition;
+    }
+
+    // Add client section
+    addClientSection(documentData, yPosition) {
+        const client = documentData.client;
+
+        this.doc.setFontSize(12);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.text('Bill To:', this.margin, yPosition);
+        yPosition += 8;
+
+        this.doc.setFontSize(10);
+        this.doc.setFont('helvetica', 'normal');
+        this.doc.text(client.name || 'Client Name', this.margin, yPosition);
+        yPosition += 5;
+
+        const clientAddressLines = (client.address || 'Client Address').split('\n');
+        clientAddressLines.forEach(line => {
+            this.doc.text(line.trim(), this.margin, yPosition);
+            yPosition += 5;
+        });
+
+        this.doc.text(client.email || 'client@email.com', this.margin, yPosition);
+        yPosition += 5;
+        this.doc.text(client.phone || 'Client Phone', this.margin, yPosition);
+        yPosition += 15;
+
+        return yPosition;
+    }
+
+    // Add items table
+    addItemsTable(documentData, yPosition) {
+        const items = documentData.items || [];
+
+        // Table headers
+        const tableY = yPosition;
+        const rowHeight = 8;
+        const colWidths = [80, 25, 35, 35]; // Description, Qty, Price, Total
+        const colPositions = [this.margin, this.margin + colWidths[0], this.margin + colWidths[0] + colWidths[1], this.margin + colWidths[0] + colWidths[1] + colWidths[2]];
+
+        // Header background
+        this.doc.setFillColor(240, 240, 240);
+        this.doc.rect(this.margin, tableY, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
+
+        // Header border
+        this.doc.setLineWidth(0.5);
+        this.doc.rect(this.margin, tableY, colWidths.reduce((a, b) => a + b, 0), rowHeight);
+
+        // Header text
+        this.doc.setFontSize(10);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.text('Description', colPositions[0] + 2, tableY + 5);
+        this.doc.text('Qty', colPositions[1] + 2, tableY + 5);
+        this.doc.text('Price', colPositions[2] + 2, tableY + 5);
+        this.doc.text('Total', colPositions[3] + 2, tableY + 5);
+
+        yPosition = tableY + rowHeight;
+
+        // Table rows
+        this.doc.setFont('helvetica', 'normal');
+        items.forEach((item, index) => {
+            const itemTotal = (item.quantity || 0) * (item.price || 0);
+
+            // Row border
+            this.doc.setLineWidth(0.2);
+            this.doc.rect(this.margin, yPosition, colWidths.reduce((a, b) => a + b, 0), rowHeight);
+
+            // Row data
+            this.doc.text(item.description || '', colPositions[0] + 2, yPosition + 5);
+            this.doc.text((item.quantity || 0).toString(), colPositions[1] + 2, yPosition + 5);
+            this.doc.text(this.formatCurrency(item.price || 0, documentData.business.currency), colPositions[2] + 2, yPosition + 5);
+            this.doc.text(this.formatCurrency(itemTotal, documentData.business.currency), colPositions[3] + 2, yPosition + 5);
+
+            yPosition += rowHeight;
+        });
+
+        // Table bottom border
+        this.doc.setLineWidth(0.5);
+        this.doc.line(this.margin, yPosition, this.margin + colWidths.reduce((a, b) => a + b, 0), yPosition);
+
+        return yPosition + 10;
+    }
+
+    // Add totals section
+    addTotals(documentData, yPosition) {
+        const totals = documentData.totals;
+        const rightX = this.pageWidth - this.margin;
+        const leftX = rightX - 60;
+
+        this.doc.setFontSize(10);
+        this.doc.setFont('helvetica', 'normal');
+
+        // Subtotal
+        this.doc.text('Subtotal:', leftX, yPosition);
+        this.doc.text(this.formatCurrency(totals.subtotal, documentData.business.currency), rightX, yPosition, { align: 'right' });
+        yPosition += 6;
+
+        // Tax
+        const taxAmount = totals.subtotal * (totals.taxRate / 100);
+        this.doc.text(`Tax (${totals.taxRate}%):`, leftX, yPosition);
+        this.doc.text(this.formatCurrency(taxAmount, documentData.business.currency), rightX, yPosition, { align: 'right' });
+        yPosition += 8;
+
+        // Total line
+        this.doc.setLineWidth(0.5);
+        this.doc.line(leftX, yPosition - 2, rightX, yPosition - 2);
+
+        // Grand total
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.text('Total:', leftX, yPosition);
+        this.doc.text(this.formatCurrency(totals.grandTotal, documentData.business.currency), rightX, yPosition, { align: 'right' });
+
+        return yPosition + 15;
+    }
+
+    // Add notes section
+    addNotes(documentData, yPosition) {
+        this.doc.setFontSize(10);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.text('NOTES:', this.margin, yPosition);
+        yPosition += 8;
+
+        this.doc.setFont('helvetica', 'normal');
+        const noteLines = documentData.notes.split('\n');
+        noteLines.forEach(line => {
+            this.doc.text(line, this.margin, yPosition);
+            yPosition += 5;
+        });
+
+        return yPosition + 10;
+    }
+
+    // Add footer with signature
+    addFooter(documentData) {
+        const footerY = this.pageHeight - 60;
+
+        // Signature section
+        if (documentData.business.signatureUrl && documentData.business.signatureUrl.trim()) {
+            this.doc.setFontSize(10);
+            this.doc.setFont('helvetica', 'bold');
+            this.doc.text('AUTHORIZED SIGNATURE:', this.margin, footerY);
+
+            // Try to add signature image
+            this.loadImage(documentData.business.signatureUrl).then(signatureImg => {
+                if (signatureImg) {
+                    this.doc.addImage(signatureImg, 'JPEG', this.margin, footerY + 5, 40, 15);
+                }
+            }).catch(error => {
+                console.warn('Could not load signature:', error);
+                // Add signature line instead
+                this.doc.line(this.margin, footerY + 15, this.margin + 60, footerY + 15);
+            });
+        } else {
+            this.doc.setFontSize(10);
+            this.doc.setFont('helvetica', 'bold');
+            this.doc.text('AUTHORIZED SIGNATURE:', this.margin, footerY);
+            this.doc.line(this.margin, footerY + 15, this.margin + 60, footerY + 15);
+        }
+
+        // Bottom line
+        this.doc.setLineWidth(0.5);
+        this.doc.line(this.margin, this.pageHeight - 35, this.pageWidth - this.margin, this.pageHeight - 35);
+
+        // Thank you message
+        this.doc.setFontSize(9);
+        this.doc.setFont('helvetica', 'normal');
+        this.doc.text('Thank you for your business!', this.pageWidth / 2, this.pageHeight - 25, { align: 'center' });
+
+        // Generation info
+        const generatedDate = new Date().toLocaleDateString();
+        this.doc.text(`Generated on ${generatedDate}`, this.margin, this.pageHeight - 10);
     }
 
     // Download PDF
@@ -679,81 +364,117 @@ class SimplePDFGenerator {
     // Helper: Format currency
     formatCurrency(amount, currency = 'USD') {
         const numAmount = parseFloat(amount) || 0;
+        const currencySymbols = {
+            'USD': '$',
+            'EUR': '€',
+            'GBP': '£',
+            'NGN': '₦',
+            'CAD': 'C$',
+            'AUD': 'A$'
+        };
 
-        try {
-            const formatter = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: currency,
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-            return formatter.format(numAmount);
-        } catch (error) {
-            const symbols = {
-                'USD': '$', 'EUR': '€', 'GBP': '£', 'NGN': '₦', 'CAD': 'C$',
-                'AUD': 'A$', 'INR': '₹', 'JPY': '¥', 'CNY': '¥'
-            };
-            const symbol = symbols[currency] || `${currency} `;
-            const formatted = numAmount.toLocaleString('en-US', { 
-                minimumFractionDigits: 2, 
-                maximumFractionDigits: 2 
-            });
-            return `${symbol}${formatted}`;
-        }
+        const symbol = currencySymbols[currency] || '$';
+        const formatted = numAmount.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        return symbol + formatted;
     }
 
-    // Helper: Format date
-    formatDate(dateString) {
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        } catch (error) {
-            return dateString;
-        }
-    }
-
-    checkJsPDF() {
-        // Wait for jsPDF to be available
-        const checkInterval = setInterval(() => {
-            if (ensureJsPDFLoaded() && typeof window.jsPDF !== 'undefined') {
-                clearInterval(checkInterval);
-                this.ready = true;
-                console.log('SimplePDFGenerator ready');
-            }
-        }, 100);
-
-        // Timeout after 10 seconds
-        setTimeout(() => {
-            if (!this.ready) {
-                clearInterval(checkInterval);
-                console.error('jsPDF not loaded after 10 seconds');
-                // Try one more time to ensure jsPDF
-                if (ensureJsPDFLoaded()) {
-                    this.ready = true;
-                    console.log('SimplePDFGenerator ready (fallback)');
-                }
-            }
-        }, 10000);
+    // Helper: Load image
+    loadImage(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = url;
+        });
     }
 }
 
-// Initialize and expose globally
+// Simple PDF Generator (fallback)
 console.log('Loading Simple PDF Generator...');
-window.EnhancedPDFGenerator = new SimplePDFGenerator();
-console.log('SimplePDFGenerator initialized');
 
-// Wait for jsPDF to be available
-function waitForJsPDF() {
-    if (typeof window.jsPDF !== 'undefined') {
-        console.log('SimplePDFGenerator ready');
-        return true;
+class SimplePDFGenerator {
+    constructor() {
+        this.ready = false;
+        this.init();
     }
-    return false;
+
+    async init() {
+        // Wait for jsPDF to be available
+        let attempts = 0;
+        const maxAttempts = 50;
+
+        while (!waitForJsPDF() && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        if (waitForJsPDF()) {
+            this.ready = true;
+            console.log('SimplePDFGenerator initialized');
+        } else {
+            console.error('Failed to initialize SimplePDFGenerator - jsPDF not available');
+        }
+    }
+
+    async generatePDF(documentData) {
+        if (!this.ready || !waitForJsPDF()) {
+            throw new Error('Simple PDF generator not ready');
+        }
+
+        const doc = new window.jspdf.jsPDF();
+
+        // Simple document generation
+        doc.setFontSize(20);
+        doc.text(documentData.type.toUpperCase(), 20, 30);
+
+        doc.setFontSize(12);
+        doc.text(`Document #: ${documentData.number}`, 20, 50);
+        doc.text(`Date: ${documentData.date}`, 20, 60);
+
+        // Client info
+        doc.text(`Client: ${documentData.client.name}`, 20, 80);
+        doc.text(`Email: ${documentData.client.email}`, 20, 90);
+
+        // Items
+        let y = 110;
+        doc.text('Items:', 20, y);
+        y += 10;
+
+        documentData.items.forEach(item => {
+            doc.text(`${item.description} - Qty: ${item.quantity} - Price: ${item.price}`, 20, y);
+            y += 10;
+        });
+
+        // Total
+        doc.text(`Total: ${this.formatCurrency(documentData.totals.grandTotal, documentData.business.currency)}`, 20, y + 20);
+
+        return doc;
+    }
+
+    formatCurrency(amount, currency = 'USD') {
+        const numAmount = parseFloat(amount) || 0;
+        const currencySymbols = {
+            'USD': '$',
+            'EUR': '€',
+            'GBP': '£',
+            'NGN': '₦',
+            'CAD': 'C$',
+            'AUD': 'A$'
+        };
+
+        const symbol = currencySymbols[currency] || '$';
+        return symbol + numAmount.toFixed(2);
+    }
 }
+
+// Initialize generators
+let enhancedGenerator = null;
+let simpleGenerator = null;
 
 // Check if jsPDF is ready
 if (!waitForJsPDF()) {
@@ -762,9 +483,40 @@ if (!waitForJsPDF()) {
         attempts++;
         if (waitForJsPDF() || attempts > 50) {
             clearInterval(checkInterval);
-            if (attempts > 50) {
-                console.error('jsPDF failed to load after 5 seconds');
+            if (waitForJsPDF()) {
+                initializeGenerators();
+            } else {
+                console.error('jsPDF failed to load after maximum attempts');
             }
         }
     }, 100);
+} else {
+    initializeGenerators();
+}
+
+async function initializeGenerators() {
+    try {
+        enhancedGenerator = new EnhancedPDFGenerator();
+        simpleGenerator = new SimplePDFGenerator();
+
+        // Wait for initialization
+        await new Promise(resolve => {
+            const checkReady = () => {
+                if (enhancedGenerator.ready && simpleGenerator.ready) {
+                    resolve();
+                } else {
+                    setTimeout(checkReady, 100);
+                }
+            };
+            checkReady();
+        });
+
+        // Set global reference
+        window.EnhancedPDFGenerator = enhancedGenerator;
+        window.SimplePDFGenerator = simpleGenerator;
+
+        console.log('SimplePDFGenerator ready');
+    } catch (error) {
+        console.error('Error initializing PDF generators:', error);
+    }
 }
