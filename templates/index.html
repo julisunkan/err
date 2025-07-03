@@ -795,7 +795,8 @@
             document.getElementById('documentDate').value = new Date().toISOString().split('T')[0];
             generateDocumentNumber();
 
-            // Add event listeners            setupEventListeners();
+            // Add event listeners
+            setupEventListeners();
 
             // Initialize first item calculations
             calculateTotals();
@@ -1063,8 +1064,8 @@
                 subtotal += total;
             });
 
-            const taxRate = parseFloat(businessSettings.taxRate) || 0;
-            const tax = subtotal * (taxRate / 100);
+            const taxRateValue = parseFloat(businessSettings.taxRate) || 0;
+            const tax = subtotal * (taxRateValue / 100);
             const total = subtotal + tax;
 
             document.getElementById('subtotal').textContent = formatCurrency(subtotal);
@@ -1193,8 +1194,8 @@
             `;
 
             // Totals calculation
-            const taxRate = parseFloat(businessSettings.taxRate) || 0;
-            const tax = subtotal * (taxRate / 100);
+            const previewTaxRate = parseFloat(businessSettings.taxRate) || 0;
+            const tax = subtotal * (previewTaxRate / 100);
             const grandTotal = subtotal + tax;
 
             html += `
@@ -1205,7 +1206,7 @@
                             <td class="text-right">${formatCurrency(subtotal)}</td>
                         </tr>
                         <tr>
-                            <td>Tax (${taxRate}%):</td>
+                            <td>Tax (${previewTaxRate}%):</td>
                             <td class="text-right">${formatCurrency(tax)}</td>
                         </tr>
                         <tr class="total-row">
@@ -1336,8 +1337,8 @@
                 });
 
                 // Calculate totals
-                const taxRate = parseFloat(businessSettings.taxRate) || 0;
-                const tax = subtotal * (taxRate / 100);
+                const documentTaxRate = parseFloat(businessSettings.taxRate) || 0;
+                const tax = subtotal * (documentTaxRate / 100);
                 const grandTotal = subtotal + tax;
 
                 // Prepare document data
@@ -1363,7 +1364,7 @@
                     items: items,
                     totals: {
                         subtotal: subtotal,
-                        taxRate: taxRate,
+                        taxRate: documentTaxRate,
                         grandTotal: grandTotal
                     },
                     notes: notes
