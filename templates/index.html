@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -299,6 +300,7 @@
                                     <h4><i class="fas fa-sign-in-alt me-2"></i>Login</h4>
                                 </div>
                                 <div class="card-body">
+                                    <div id="login-alert-container"></div>
                                     <form id="loginForm">
                                         <div class="mb-3">
                                             <label for="loginUsername" class="form-label">Username</label>
@@ -313,7 +315,7 @@
                                         </div>
                                     </form>
                                     <div class="text-center mt-3">
-                                        <p class="mb-1">Don't have an account? <a href="#" onclick="switchTab('register-tab')">Register here</a></p>
+                                        <p class="mb-1">Need an account? Contact your administrator.</p>
                                         <p class="text-muted mt-2"><small></small></p>
                                     </div>
                                 </div>
@@ -321,8 +323,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Register Tab -->
                 {% endif %}
 
                 <!-- Download Codes Tab (Admin Only) -->
@@ -510,23 +510,17 @@
                 </div>
                 <div class="col-md-4 text-end">
                     <div class="small">
-                        <a href="{{ url_for('login') }}" class="btn btn-primary me-2">
+                        {% if not session.user_id %}
+                            <a href="{{ url_for('login') }}" class="btn btn-primary me-2">
                                 <i class="fas fa-sign-in-alt"></i> Login
                             </a>
                             <span class="text-muted">Need an account? Contact your administrator.</span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </footer>
-
-
-                        </div>
-                        </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -662,18 +656,6 @@
                 loginForm.addEventListener('submit', handleLogin);
             }
 
-            // Register form
-            const registerForm = document.getElementById('registerForm');
-            if (registerForm) {
-                registerForm.addEventListener('submit', handleRegister);
-            }
-
-            // Forgot password form
-            const forgotForm = document.getElementById('forgotPasswordForm');
-            if (forgotForm) {
-                forgotForm.addEventListener('submit', handleForgotPassword);
-            }
-
             // PDF Download code input formatting
             const pdfDownloadCodeInput = document.getElementById('pdfDownloadCode');
             if (pdfDownloadCodeInput) {
@@ -706,11 +688,11 @@
             const importBtn = document.getElementById('importUserSettings');
             if (importBtn) {
                 importBtn.addEventListener('click', function() {
-                                        const importInput = document.getElementById('importFileInput');
-                                        if (importInput) {
-                                            importInput.click();
-                                        }
-                                    });
+                    const importInput = document.getElementById('importFileInput');
+                    if (importInput) {
+                        importInput.click();
+                    }
+                });
             }
 
             // Guest currency selection
@@ -727,7 +709,6 @@
             if (importInput) {
                 importInput.addEventListener('change', importUserSettings);
             }
-
         }
 
         // Generate document number
@@ -747,7 +728,7 @@
                 case 'receipt': prefix = 'REC'; break;
             }
 
-            const docNumber = `${prefix}-${year}${month}${day}-${random}`;
+            const docNumber = prefix + '-' + year + month + day + '-' + random;
             document.getElementById('documentNumber').value = docNumber;
         }
 
@@ -756,35 +737,33 @@
             const container = document.getElementById('itemsContainer');
             const itemRow = document.createElement('div');
             itemRow.className = 'item-row border rounded p-3 mb-3';
-            itemRow.innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-2">
-                            <label class="form-label">Description</label>
-                            <input type="text" class="form-control item-description" placeholder="Item description">
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="mb-2">
-                            <label class="form-label">Qty</label>
-                            <input type="number" class="form-control item-quantity" value="1" min="1">
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="mb-2">
-                            <label class="form-label">Price</label>
-                            <input type="number" class="form-control item-price" step="0.01" min="0">
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="mb-2">
-                            <label class="form-label">Total</label>
-                            <input type="text" class="form-control item-total" readonly>
-                        </div>
-                    </div>
-                </div>
-                <button type="button" class="btn btn-sm btn-danger remove-item">Remove</button>
-            `;
+            itemRow.innerHTML = '<div class="row">' +
+                '<div class="col-md-6">' +
+                    '<div class="mb-2">' +
+                        '<label class="form-label">Description</label>' +
+                        '<input type="text" class="form-control item-description" placeholder="Item description">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="col-md-2">' +
+                    '<div class="mb-2">' +
+                        '<label class="form-label">Qty</label>' +
+                        '<input type="number" class="form-control item-quantity" value="1" min="1">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="col-md-2">' +
+                    '<div class="mb-2">' +
+                        '<label class="form-label">Price</label>' +
+                        '<input type="number" class="form-control item-price" step="0.01" min="0">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="col-md-2">' +
+                    '<div class="mb-2">' +
+                        '<label class="form-label">Total</label>' +
+                        '<input type="text" class="form-control item-total" readonly>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<button type="button" class="btn btn-sm btn-danger remove-item">Remove</button>';
 
             container.appendChild(itemRow);
 
@@ -875,14 +854,12 @@
                 subtotal += total;
 
                 if (description || quantity || price) {
-                    itemsHtml += `
-                        <tr>
-                            <td>${description}</td>
-                            <td>${quantity}</td>
-                            <td>${formatCurrency(price)}</td>
-                            <td>${formatCurrency(total)}</td>
-                        </tr>
-                    `;
+                    itemsHtml += '<tr>' +
+                        '<td>' + description + '</td>' +
+                        '<td>' + quantity + '</td>' +
+                        '<td>' + formatCurrency(price) + '</td>' +
+                        '<td>' + formatCurrency(total) + '</td>' +
+                    '</tr>';
                 }
             });
 
@@ -892,65 +869,63 @@
 
             const docTypeDisplay = docType.charAt(0).toUpperCase() + docType.slice(1).replace('_', ' ');
 
-            preview.innerHTML = `
-                <div style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px;">
-                        <div>
-                            <h2 style="color: #333; margin: 0;">${businessSettings.businessName || 'Your Business Name'}</h2>
-                            <p style="margin: 5px 0; color: #666;">${businessSettings.businessAddress || 'Your Business Address'}</p>
-                            <p style="margin: 5px 0; color: #666;">${businessSettings.businessPhone || 'Your Phone'}</p>
-                            <p style="margin: 5px 0; color: #666;">${businessSettings.businessEmail || 'your@email.com'}</p>
-                        </div>
-                        <div style="text-align: right;">
-                            <h1 style="color: #007bff; margin: 0;">${docTypeDisplay}</h1>
-                            <p style="margin: 5px 0; font-weight: bold;">#${docNumber || 'DOC-001'}</p>
-                            <p style="margin: 5px 0; color: #666;">${docDate || new Date().toISOString().split('T')[0]}</p>
-                        </div>
-                    </div>
+            preview.innerHTML = '<div style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">' +
+                '<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px;">' +
+                    '<div>' +
+                        '<h2 style="color: #333; margin: 0;">' + (businessSettings.businessName || 'Your Business Name') + '</h2>' +
+                        '<p style="margin: 5px 0; color: #666;">' + (businessSettings.businessAddress || 'Your Business Address') + '</p>' +
+                        '<p style="margin: 5px 0; color: #666;">' + (businessSettings.businessPhone || 'Your Phone') + '</p>' +
+                        '<p style="margin: 5px 0; color: #666;">' + (businessSettings.businessEmail || 'your@email.com') + '</p>' +
+                    '</div>' +
+                    '<div style="text-align: right;">' +
+                        '<h1 style="color: #007bff; margin: 0;">' + docTypeDisplay + '</h1>' +
+                        '<p style="margin: 5px 0; font-weight: bold;">#' + (docNumber || 'DOC-001') + '</p>' +
+                        '<p style="margin: 5px 0; color: #666;">' + (docDate || new Date().toISOString().split('T')[0]) + '</p>' +
+                    '</div>' +
+                '</div>' +
 
-                    <div style="margin-bottom: 30px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-                        <h4 style="margin: 0 0 10px 0; color: #333;">Bill To:</h4>
-                        <p style="margin: 5px 0; font-weight: bold;">${clientName || 'Client Name'}</p>
-                        <p style="margin: 5px 0; color: #666;">${clientAddress || 'Client Address'}</p>
-                        <p style="margin: 5px 0; color: #666;">${clientEmail || 'client@email.com'}</p>
-                        <p style="margin: 5px 0; color: #666;">${clientPhone || 'Client Phone'}</p>
-                    </div>
+                '<div style="margin-bottom: 30px; padding: 15px; background: #f8f9fa; border-radius: 5px;">' +
+                    '<h4 style="margin: 0 0 10px 0; color: #333;">Bill To:</h4>' +
+                    '<p style="margin: 5px 0; font-weight: bold;">' + (clientName || 'Client Name') + '</p>' +
+                    '<p style="margin: 5px 0; color: #666;">' + (clientAddress || 'Client Address') + '</p>' +
+                    '<p style="margin: 5px 0; color: #666;">' + (clientEmail || 'client@email.com') + '</p>' +
+                    '<p style="margin: 5px 0; color: #666;">' + (clientPhone || 'Client Phone') + '</p>' +
+                '</div>' +
 
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                        <thead>
-                            <tr style="background: #007bff; color: white;">
-                                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Description</th>
-                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd; width: 80px;">Qty</th>
-                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd; width: 100px;">Price</th>
-                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd; width: 100px;">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${itemsHtml || '<tr><td colspan="4" style="padding: 12px; text-align: center; color: #999; border: 1px solid #ddd;">No items added</td></tr>'}
-                        </tbody>
-                    </table>
+                '<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">' +
+                    '<thead>' +
+                        '<tr style="background: #007bff; color: white;">' +
+                            '<th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Description</th>' +
+                            '<th style="padding: 12px; text-align: center; border: 1px solid #ddd; width: 80px;">Qty</th>' +
+                            '<th style="padding: 12px; text-align: right; border: 1px solid #ddd; width: 100px;">Price</th>' +
+                            '<th style="padding: 12px; text-align: right; border: 1px solid #ddd; width: 100px;">Total</th>' +
+                        '</tr>' +
+                    '</thead>' +
+                    '<tbody>' +
+                        (itemsHtml || '<tr><td colspan="4" style="padding: 12px; text-align: center; color: #999; border: 1px solid #ddd;">No items added</td></tr>') +
+                    '</tbody>' +
+                '</table>' +
 
-                    <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div style="flex: 1; margin-right: 20px;">
-                            ${notes ? `<div><h4 style="margin: 0 0 10px 0; color: #333;">Notes:</h4><p style="color: #666; margin: 0;">${notes}</p></div>` : ''}
-                        </div>
-                        <div style="min-width: 250px; background: #f8f9fa; padding: 15px; border-radius: 5px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <span>Subtotal:</span>
-                                <span>${formatCurrency(subtotal)}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <span>Tax (${taxRate}%):</span>
-                                <span>${formatCurrency(tax)}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2em; padding-top: 10px; border-top: 1px solid #ddd;">
-                                <span>Total:</span>
-                                <span>${formatCurrency(total)}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+                '<div style="display: flex; justify-content: space-between; align-items: start;">' +
+                    '<div style="flex: 1; margin-right: 20px;">' +
+                        (notes ? '<div><h4 style="margin: 0 0 10px 0; color: #333;">Notes:</h4><p style="color: #666; margin: 0;">' + notes + '</p></div>' : '') +
+                    '</div>' +
+                    '<div style="min-width: 250px; background: #f8f9fa; padding: 15px; border-radius: 5px;">' +
+                        '<div style="display: flex; justify-content: space-between; margin-bottom: 10px;">' +
+                            '<span>Subtotal:</span>' +
+                            '<span>' + formatCurrency(subtotal) + '</span>' +
+                        '</div>' +
+                        '<div style="display: flex; justify-content: space-between; margin-bottom: 10px;">' +
+                            '<span>Tax (' + taxRate + '%):</span>' +
+                            '<span>' + formatCurrency(tax) + '</span>' +
+                        '</div>' +
+                        '<div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2em; padding-top: 10px; border-top: 1px solid #ddd;">' +
+                            '<span>Total:</span>' +
+                            '<span>' + formatCurrency(total) + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
         }
 
         // Verify download code
@@ -998,7 +973,7 @@
             }
 
             try {
-                const { jsPDF } = window.jspdf;
+                const jsPDF = window.jspdf.jsPDF;
                 const doc = new jsPDF();
 
                 // Get form data
@@ -1017,8 +992,8 @@
                 doc.text(docTypeDisplay, 20, 30);
 
                 doc.setFontSize(12);
-                doc.text(`Document #: ${docNumber}`, 20, 45);
-                doc.text(`Date: ${docDate}`, 20, 55);
+                doc.text('Document #: ' + docNumber, 20, 45);
+                doc.text('Date: ' + docDate, 20, 55);
 
                 // Business info
                 doc.text(businessSettings.businessName || 'Your Business', 20, 75);
@@ -1066,12 +1041,12 @@
                 const tax = subtotal * (taxRate / 100);
                 const finalTotal = subtotal + tax;
 
-                doc.text(`Subtotal: ${formatCurrency(subtotal)}`, 120, yPos);
+                doc.text('Subtotal: ' + formatCurrency(subtotal), 120, yPos);
                 yPos += 10;
-                doc.text(`Tax (${taxRate}%): ${formatCurrency(tax)}`, 120, yPos);
+                doc.text('Tax (' + taxRate + '%): ' + formatCurrency(tax), 120, yPos);
                 yPos += 10;
                 doc.setFontSize(14);
-                doc.text(`Total: ${formatCurrency(finalTotal)}`, 120, yPos);
+                doc.text('Total: ' + formatCurrency(finalTotal), 120, yPos);
 
                 // Notes
                 if (notes) {
@@ -1083,7 +1058,7 @@
                 }
 
                 // Save the PDF
-                const filename = `${docType}-${docNumber}.pdf`;
+                const filename = docType + '-' + docNumber + '.pdf';
                 doc.save(filename);
                 
                 showNotification('PDF generated successfully!', 'success');
@@ -1106,7 +1081,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showNotification(`Download code generated: ${data.code}`, 'success');
+                    showNotification('Download code generated: ' + data.code, 'success');
                 } else {
                     showNotification(data.error || 'Failed to generate code', 'error');
                 }
@@ -1166,17 +1141,17 @@
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
-                    showNotification('Login successful!', 'success');
+                    showLoginAlert('Login successful!', 'success');
                     setTimeout(() => {
                         window.location.href = result.redirect || '/dashboard';
                     }, 1000);
                 } else {
-                    showNotification(result.error, 'error');
+                    showLoginAlert(result.error, 'danger');
                 }
             })
             .catch(error => {
                 console.error('Login error:', error);
-                showNotification('Login failed', 'error');
+                showLoginAlert('Login failed', 'danger');
             });
         }
 
@@ -1283,11 +1258,8 @@
             const alertClass = type === 'error' ? 'danger' : type;
             
             const alert = document.createElement('div');
-            alert.className = `alert alert-${alertClass} alert-dismissible fade show`;
-            alert.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
+            alert.className = 'alert alert-' + alertClass + ' alert-dismissible fade show';
+            alert.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
             
             container.appendChild(alert);
             
@@ -1298,3 +1270,17 @@
                 }
             }, 5000);
         }
+
+        // Show login alert (specific to login form)
+        function showLoginAlert(message, type) {
+            const container = document.getElementById('login-alert-container');
+            if (container) {
+                container.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                    message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>';
+            }
+        }
+    </script>
+</body>
+</html>
