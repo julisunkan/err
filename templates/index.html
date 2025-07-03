@@ -861,6 +861,16 @@
                 });
             });
 
+            // Document type change - regenerate document number
+            const documentTypeSelect = document.getElementById('documentType');
+            if (documentTypeSelect) {
+                documentTypeSelect.addEventListener('change', function() {
+                    generateDocumentNumber();
+                    calculateTotals();
+                    updatePreview();
+                });
+            }
+
             // Add item button
             document.getElementById('addItem').addEventListener('click', addItem);
 
@@ -967,18 +977,32 @@
 
             // Different formats for different document types
             const type = document.getElementById('documentType').value;
+            let documentNumber;
+            
             switch(type) {
                 case 'invoice':
-                    return `${prefix}-${year}${month}${day}-${random}`;
+                    documentNumber = `${prefix}-${year}${month}${day}-${random}`;
+                    break;
                 case 'quotation':
-                    return `${prefix}-${year}${month}-${String(random).padStart(4, '0')}`;
+                    documentNumber = `${prefix}-${year}${month}-${String(random).padStart(4, '0')}`;
+                    break;
                 case 'receipt':
-                    return `${prefix}${year}${month}${day}${String(random).padStart(3, '0')}`;
+                    documentNumber = `${prefix}${year}${month}${day}${String(random).padStart(3, '0')}`;
+                    break;
                 case 'purchase_order':
-                    return `${prefix}-${year}-${month}${day}-${random}`;
+                    documentNumber = `${prefix}-${year}-${month}${day}-${random}`;
+                    break;
                 default:
-                    return `DOC-${year}${month}${day}-${random}`;
+                    documentNumber = `DOC-${year}${month}${day}-${random}`;
             }
+            
+            // Set the document number in the input field
+            const documentNumberInput = document.getElementById('documentNumber');
+            if (documentNumberInput) {
+                documentNumberInput.value = documentNumber;
+            }
+            
+            return documentNumber;
         }
 
         function getDocumentPrefix() {
