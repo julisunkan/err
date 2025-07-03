@@ -628,6 +628,8 @@ class MinimalPDFGenerator {
                 clearInterval(checkInterval);
                 this.ready = true;
                 console.log('MinimalPDFGenerator ready');
+                // Dispatch custom event to notify other components
+                window.dispatchEvent(new CustomEvent('pdfGeneratorReady'));
             }
         }, 100);
 
@@ -638,9 +640,15 @@ class MinimalPDFGenerator {
                 if (ensureJsPDFLoaded()) {
                     this.ready = true;
                     console.log('MinimalPDFGenerator ready (fallback)');
+                    window.dispatchEvent(new CustomEvent('pdfGeneratorReady'));
                 }
             }
         }, 10000);
+    }
+
+    // Method to check if generator is ready
+    isReady() {
+        return this.ready && typeof window.jsPDF !== 'undefined';
     }
 }
 

@@ -499,17 +499,22 @@
                                                         >
                                                     </div>
                                                     <div class="col-md-4">
-                                                        <button
-                                                            type="button"
-                                                            class="btn btn-primary w-100"
-                                                            id="generatePDF"
-                                                            disabled
-                                                        >
-                                                            <i
-                                                                class="fas fa-file-pdf me-2"
-                                                            ></i
-                                                            >Generate PDF
-                                                        </button>
+                                                        <div class="mb-2">
+                                                <small id="pdfGeneratorStatus" class="text-muted">
+                                                    <i class="fas fa-spinner fa-spin text-warning"></i> Loading PDF Generator...
+                                                </small>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                class="btn btn-primary w-100"
+                                                id="generatePDF"
+                                                disabled
+                                            >
+                                                <i
+                                                    class="fas fa-file-pdf me-2"
+                                                ></i
+                                                >Generate PDF
+                                            </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1091,7 +1096,7 @@
                                                                 >Password</label
                                                             >
                                                             <div
-                                                                class="input-group"
+                                                                                               class="input-group"
                                                             >
                                                                 <span
                                                                     class="input-group-text"
@@ -1961,7 +1966,7 @@
                 });
             }
 
-            // Handle settings form (Admin only)
+            //// Handle settings form (Admin only)
             function handleSettingsSubmit(e) {
                 e.preventDefault();
                 const formData = new FormData(e.target);
