@@ -1081,7 +1081,23 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.codes && data.codes.length > 0) {
-                    showNotification('Download code generated: ' + data.codes[0].code, 'success');
+                    const generatedCode = data.codes[0].code;
+                    
+                    // Auto-fill the code into the PDF download input field
+                    const pdfDownloadCodeInput = document.getElementById('pdfDownloadCode');
+                    if (pdfDownloadCodeInput) {
+                        pdfDownloadCodeInput.value = generatedCode;
+                        pdfDownloadCodeInput.focus();
+                        pdfDownloadCodeInput.select(); // Select the text for easy copying
+                    }
+                    
+                    // Also fill the admin codes tab input if it exists
+                    const downloadCodeInput = document.getElementById('downloadCode');
+                    if (downloadCodeInput) {
+                        downloadCodeInput.value = generatedCode;
+                    }
+                    
+                    showNotification('Download code generated and ready to use: ' + generatedCode, 'success');
                 } else {
                     showNotification(data.error || 'Failed to generate code', 'error');
                 }
