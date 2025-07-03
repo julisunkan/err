@@ -131,7 +131,13 @@
                                         <!-- Document Number -->
                                         <div class="mb-3">
                                             <label for="documentNumber" class="form-label">Document Number</label>
-                                            <input type="text" class="form-control" id="documentNumber" name="documentNumber">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="documentNumber" required>
+                                                <button type="button" class="btn btn-outline-secondary" onclick="generateDocumentNumber()" title="Generate New Number">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                            </div>
+                                            <div class="form-text">Click the refresh button to generate a different format</div>
                                         </div>
 
                                         <!-- Date -->
@@ -627,7 +633,7 @@
             if (!businessSettings) return;
 
             const fields = ['businessName', 'businessEmail', 'businessAddress', 'businessPhone', 'businessLogoUrl', 'signatureUrl', 'taxRate', 'currency'];
-            
+
             fields.forEach(field => {
                 const element = document.getElementById(field);
                 if (element && businessSettings[field] !== undefined) {
@@ -746,24 +752,75 @@
             }
         }
 
-        // Generate document number
+        // Generate document number with different formats per document type
         function generateDocumentNumber() {
             const type = document.getElementById('documentType').value;
             const date = new Date();
             const year = date.getFullYear();
+            const shortYear = String(year).slice(-2);
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
-            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            const sequentialNum = Math.floor(Math.random() * 999) + 1;
 
-            let prefix = '';
-            switch(type) {
-                case 'invoice': prefix = 'INV'; break;
-                case 'quotation': prefix = 'QUO'; break;
-                case 'purchase_order': prefix = 'PO'; break;
-                case 'receipt': prefix = 'REC'; break;
+            let docNumber = '';
+
+            switch (type) {
+                case 'invoice':
+                    // Format: INV-2025-001234 or INV/2025/JAN/001234
+                    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY','JUN',
+                                      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                    const monthName = monthNames[date.getMonth()];
+                    const invoiceFormats = [
+                        `INV-${year}-${random}`,
+                        `INV/${year}/${monthName}/${random}`,
+                        `${year}${month}${day}-INV-${sequentialNum.toString().padStart(3, '0')}`,
+                        `INV${shortYear}${month}${random}`,
+                        `INVOICE-${year}-${month}-${sequentialNum.toString().padStart(4, '0')}`
+                    ];
+                    docNumber = invoiceFormats[Math.floor(Math.random() * invoiceFormats.length)];
+                    break;
+
+                case 'quotation':
+                    // Format: QUO-2025-001234 or QT/2025/001234
+                    const quoteFormats = [
+                        `QUO-${year}-${random}`,
+                        `QT/${year}/${random}`,
+                        `QUOTE-${shortYear}${month}${day}-${sequentialNum.toString().padStart(3, '0')}`,
+                        `QUO${year}${month}${random}`,
+                        `EST-${year}-${month}-${sequentialNum.toString().padStart(4, '0')}`
+                    ];
+                    docNumber = quoteFormats[Math.floor(Math.random() * quoteFormats.length)];
+                    break;
+
+                case 'purchase_order':
+                    // Format: PO-2025-001234 or PO/2025/001234
+                    const poFormats = [
+                        `PO-${year}-${random}`,
+                        `PO/${year}/${month}/${random}`,
+                        `PUR-${shortYear}${month}${day}-${sequentialNum.toString().padStart(3, '0')}`,
+                        `PO${year}${month}${random}`,
+                        `ORDER-${year}-${sequentialNum.toString().padStart(5, '0')}`
+                    ];
+                    docNumber = poFormats[Math.floor(Math.random() * poFormats.length)];
+                    break;
+
+                case 'receipt':
+                    // Format: REC-2025-001234 or RCPT/2025/001234
+                    const receiptFormats = [
+                        `REC-${year}-${random}`,
+                        `RCPT/${year}/${month}/${random}`,
+                        `RECEIPT-${shortYear}${month}${day}-${sequentialNum.toString().padStart(3, '0')}`,
+                        `REC${year}${month}${random}`,
+                        `PAY-${year}-${month}-${sequentialNum.toString().padStart(4, '0')}`
+                    ];
+                    docNumber = receiptFormats[Math.floor(Math.random() * receiptFormats.length)];
+                    break;
+
+                default:
+                    docNumber = `DOC-${year}${month}${day}-${random}`;
             }
 
-            const docNumber = prefix + '-' + year + month + day + '-' + random;
             document.getElementById('documentNumber').value = docNumber;
         }
 
