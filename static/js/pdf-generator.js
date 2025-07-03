@@ -430,8 +430,9 @@ class SimplePDFGenerator {
 
         // Tax if applicable
         if (totals.taxRate > 0) {
-            const taxAmount = subtotal * (parseFloat(totals.taxRate) / 100);
-            this.doc.text(`Tax (${totals.taxRate}%):`, labelX, this.currentY);
+            const docTaxRate = parseFloat(totals.taxRate) || 0;
+            const taxAmount = subtotal * (docTaxRate / 100);
+            this.doc.text(`Tax (${docTaxRate}%):`, labelX, this.currentY);
             const taxText = this.formatCurrency(taxAmount, currency);
             const taxWidth = this.doc.getTextWidth(taxText);
             this.doc.text(taxText, rightX - taxWidth, this.currentY);
@@ -480,7 +481,7 @@ class SimplePDFGenerator {
         // Calculate footer area - reserve space at bottom
         const footerAreaStart = this.pageHeight - 60;
         const footerLineY = this.pageHeight - 35;
-        
+
         // Professional signature section - positioned in footer area
         if (businessData.signatureUrl && businessData.signatureUrl.trim()) {
             this.setFont(this.fontSize.normal, 'bold');
@@ -492,15 +493,15 @@ class SimplePDFGenerator {
                     // Add signature image with proper sizing to fit in footer
                     const maxSignatureWidth = 60;
                     const maxSignatureHeight = 20;
-                    
+
                     // Calculate aspect ratio and resize accordingly
                     const img = new Image();
                     img.src = signatureData;
                     const aspectRatio = img.width / img.height;
-                    
+
                     let signatureWidth = maxSignatureWidth;
                     let signatureHeight = maxSignatureWidth / aspectRatio;
-                    
+
                     if (signatureHeight > maxSignatureHeight) {
                         signatureHeight = maxSignatureHeight;
                         signatureWidth = maxSignatureHeight * aspectRatio;
@@ -607,7 +608,7 @@ class SimplePDFGenerator {
                 this.doc.setTextColor(128, 128, 128);
                 this.doc.text(`Page ${i} of ${pageCount}`, this.pageWidth - 20, this.pageHeight - 10, { align: 'right' });
 
-                // Add generation info with username (requirement #5)
+                // Add generation info
                 const generatedDate = new Date().toLocaleDateString();
                 let currentUsername = 'Unknown User';
 
@@ -641,130 +642,32 @@ class SimplePDFGenerator {
             const doc = await this.generatePDF(documentData);
             const filename = `${documentData.type}-${documentData.number}.pdf`;
 
-            const pageWidth = this.doc.internal.pageSize.getWidth();
-            const pageHeight = this.doc.internal.pageSize.getHeight();
-            const totalsY = pageHeight - 100;
+            doc.save(filename);
 
-            // Add business logo if available
-            if (documentData.business.businessLogoUrl && documentData.business.businessLogoUrl.trim()) {
-                try {
-                    console.log('Loading business logo:', documentData.business.businessLogoUrl);
-                    const logoImg = new Image();
-                    logoImg.crossOrigin = 'anonymous';
-                    logoImg.onload = function() {
-                        try {
-                            const canvas = document.createElement('canvas');
-                            const ctx = canvas.getContext('2d');
-                            canvas.width = logoImg.width;
-                            canvas.height = logoImg.height;
-                            ctx.drawImage(logoImg, 0, 0);
-                            const logoDataURL = canvas.toDataURL('image/jpeg', 0.8);
+            // Save document info to backend
+            try {
+                const documentInfo = {
+                    document_type: documentData.type.toLowerCase(),
+                    document_title: `${documentData.type} ${documentData.number}`
+                };
 
-                            // Add logo to PDF (top right, professional placement)
-                            const logoWidth = 50;
-                            const logoHeight = Math.min((logoImg.height / logoImg.width) * logoWidth, 40);
-                            this.doc.addImage(logoDataURL, 'JPEG', pageWidth - logoWidth - 20, 20, logoWidth, logoHeight);
-                            console.log('Business logo added to PDF');
-
-                            // Continue with signature after logo is added
-                            addSignatureAndFinalize.bind(this)();
-                        } catch (error) {
-                            console.warn('Error processing logo:', error);
-                            addSignatureAndFinalize.bind(this)();
-                        }
-                    }.bind(this);
-                    logoImg.onerror = function() {
-                        console.warn('Failed to load business logo from:', documentData.business.businessLogoUrl);
-                        addSignatureAndFinalize.bind(this)();
-                    };
-                    logoImg.src = documentData.business.businessLogoUrl;
-                } catch (error) {
-                    console.warn('Error loading logo:', error);
-                    addSignatureAndFinalize.bind(this)();
-                }
-            } else {
-                addSignatureAndFinalize.bind(this)();
+                fetch('/api/save-generated-document', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(documentInfo)
+                }).then(response => response.json())
+                  .then(data => {
+                      if (data.success) {
+                          console.log('Document info saved successfully');
+                      }
+                  }).catch(error => {
+                      console.error('Failed to save document info:', error);
+                  });
+            } catch (error) {
+                console.error('Error saving document info:', error);
             }
-
-            function addSignatureAndFinalize() {
-                // Add signature if available
-                if (documentData.business.signatureUrl && documentData.business.signatureUrl.trim()) {
-                    try {
-                        console.log('Loading signature:', documentData.business.signatureUrl);
-                        const sigImg = new Image();
-                        sigImg.crossOrigin = 'anonymous';
-                        sigImg.onload = function() {
-                            try {
-                                const canvas = document.createElement('canvas');
-                                const ctx = canvas.getContext('2d');
-                                canvas.width = sigImg.width;
-                                canvas.height = sigImg.height;
-                                ctx.drawImage(sigImg, 0, 0);
-                                const sigDataURL = canvas.toDataURL('image/jpeg', 0.8);
-
-                                // Add signature (bottom area, professional placement)
-                                const sigWidth = 80;
-                                const sigHeight = Math.min((sigImg.height / sigImg.width) * sigWidth, 30);
-                                const sigY = totalsY - sigHeight - 30;
-                                this.doc.addImage(sigDataURL, 'JPEG', 20, sigY, sigWidth, sigHeight);
-
-                                // Add signature label with line
-                                this.doc.setFontSize(9);
-                                this.doc.setTextColor(60);
-                                this.doc.setDrawColor(60);
-                                this.doc.line(20, sigY + sigHeight + 15, 20 + sigWidth, sigY + sigHeight + 15);
-                                this.doc.text('Authorized Signature', 20, sigY + sigHeight + 25);
-                                console.log('Signature added to PDF');
-
-                                finalizePDF.bind(this)();
-                            } catch (error) {
-                                console.warn('Error processing signature:', error);
-                                finalizePDF.bind(this)();
-                            }
-                        }.bind(this);
-                        sigImg.onerror = function() {
-                            console.warn('Failed to load signature from:', documentData.business.signatureUrl);
-                            finalizePDF.bind(this)();
-                        };
-                        sigImg.src = documentData.business.signatureUrl;
-                    } catch (error) {
-                        console.warn('Error loading signature:', error);
-                        finalizePDF.bind(this)();
-                    }
-                } else {
-                    finalizePDF.bind(this)();
-                }
-            }
-
-            function finalizePDF() {
-                this.doc.save(filename);
-
-                // Save document info to backend
-                try {
-                    const documentInfo = {
-                        document_type: documentData.type.toLowerCase(),
-                        document_title: `${documentData.type} ${documentData.number}`
-                    };
-
-                    fetch('/api/save-generated-document', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(documentInfo)
-                    }).then(response => response.json())
-                      .then(data => {
-                          if (data.success) {
-                              console.log('Document info saved successfully');
-                          }
-                      }).catch(error => {
-                          console.error('Failed to save document info:', error);
-                      });
-                } catch (error) {
-                    console.error('Error saving document info:', error);
-                }
-            }
-
 
             return filename;
         } catch (error) {
