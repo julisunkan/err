@@ -18,216 +18,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .live-preview {
-                border: 1px solid #ddd;
-                padding: 25px;
-                background: white;
-                font-family: 'Helvetica', Arial, sans-serif;
-                font-size: 11px;
-                line-height: 1.6;
-                color: #000;
-                min-height: 700px;
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                position: relative;
-                max-width: 210mm;
-                margin: 0 auto;
-            }
-
-            .preview-header {
-                border-bottom: 1px solid #000;
-                padding-bottom: 20px;
-                margin-bottom: 20px;
-                position: relative;
-                min-height: 60px;
-            }
-
-            .preview-company-name {
-                font-size: 18px;
-                font-weight: bold;
-                color: #000;
-                margin-bottom: 12px;
-                max-width: 60%;
-            }
-
-            .preview-company-name::after {
-                content: '';
-                display: block;
-                width: 60%;
-                height: 1px;
-                background-color: #000;
-                margin-top: 5px;
-            }
-
-            .preview-company-details {
-                font-size: 11px;
-                line-height: 1.5;
-                max-width: 60%;
-            }
-
-            .preview-logo {
-                position: absolute;
-                top: 0;
-                right: 0;
-                max-width: 35px;
-                max-height: 35px;
-                border: 0.5px solid #c8c8c8;
-                padding: 2px;
-            }
-
-            .preview-document-info {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                margin-bottom: 20px;
-            }
-
-            .preview-doc-title {
-                font-size: 14px;
-                font-weight: bold;
-                text-transform: uppercase;
-            }
-
-            .preview-doc-details {
-                text-align: right;
-                font-size: 11px;
-                line-height: 1.5;
-            }
-
-            .preview-client-section {
-                margin-bottom: 25px;
-            }
-
-            .preview-client-header {
-                font-size: 14px;
-                font-weight: bold;
-                margin-bottom: 12px;
-            }
-
-            .preview-client-details {
-                font-size: 11px;
-                line-height: 1.5;
-            }
-
-            .preview-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 20px;
-                font-size: 11px;
-            }
-
-            .preview-table th {
-                background-color: #f0f0f0;
-                border: 1.5px solid #000;
-                padding: 6px 4px;
-                text-align: left;
-                font-weight: bold;
-                font-size: 11px;
-                height: 12px;
-            }
-
-            .preview-table td {
-                border: 0.3px solid #c8c8c8;
-                padding: 6px 4px;
-                vertical-align: top;
-                height: 10px;
-            }
-
-            .preview-table .text-right {
-                text-align: right;
-            }
-
-            .preview-table .text-center {
-                text-align: center;
-            }
-
-            .preview-table tbody tr:last-child td {
-                border-bottom: 1px solid #000;
-            }
-
-            .preview-totals {
-                float: right;
-                width: 280px;
-                margin-bottom: 25px;
-            }
-
-            .preview-totals table {
-                width: 100%;
-                font-size: 11px;
-            }
-
-            .preview-totals td {
-                padding: 4px 8px;
-                border-bottom: 1px solid #eee;
-            }
-
-            .preview-totals .total-row {
-                border-top: 0.5px solid #000;
-                font-weight: bold;
-            }
-
-            .preview-footer {
-                clear: both;
-                position: absolute;
-                bottom: 60px;
-                left: 25px;
-                right: 25px;
-            }
-
-            .preview-notes {
-                margin-bottom: 20px;
-            }
-
-            .preview-notes h4 {
-                font-size: 11px;
-                font-weight: bold;
-                margin-bottom: 8px;
-            }
-
-            .preview-signature-section {
-                margin-bottom: 20px;
-            }
-
-            .preview-signature-section h4 {
-                font-size: 11px;
-                font-weight: bold;
-                margin-bottom: 12px;
-            }
-
-            .preview-signature {
-                max-width: 60px;
-                max-height: 20px;
-                display: block;
-                margin-bottom: 3px;
-            }
-
-            .preview-signature-line {
-                width: 80px;
-                height: 0.5px;
-                background: #000;
-                margin-bottom: 15px;
-            }
-
-            .preview-bottom-line {
-                position: absolute;
-                bottom: 35px;
-                left: 0;
-                right: 0;
-                height: 0.5px;
-                background: #000;
-            }
-
-            .preview-thank-you {
-                text-align: center;
-                font-size: 9px;
-                color: #646464;
-                position: absolute;
-                bottom: 10px;
-                left: 0;
-                right: 0;
-            }
-
-    </style>
 
     <!-- Offline Support -->
     <script>
@@ -837,7 +627,7 @@
             if (!businessSettings) return;
 
             const fields = ['businessName', 'businessEmail', 'businessAddress', 'businessPhone', 'businessLogoUrl', 'signatureUrl', 'taxRate', 'currency'];
-
+            
             fields.forEach(field => {
                 const element = document.getElementById(field);
                 if (element && businessSettings[field] !== undefined) {
@@ -860,16 +650,6 @@
                     updatePreview();
                 });
             });
-
-            // Document type change - regenerate document number
-            const documentTypeSelect = document.getElementById('documentType');
-            if (documentTypeSelect) {
-                documentTypeSelect.addEventListener('change', function() {
-                    generateDocumentNumber();
-                    calculateTotals();
-                    updatePreview();
-                });
-            }
 
             // Add item button
             document.getElementById('addItem').addEventListener('click', addItem);
@@ -966,54 +746,25 @@
             }
         }
 
-        // Generate document number with unique formats
+        // Generate document number
         function generateDocumentNumber() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            const random = Math.floor(Math.random() * 1000);
-            const prefix = getDocumentPrefix();
-
-            // Different formats for different document types
             const type = document.getElementById('documentType').value;
-            let documentNumber;
-            
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+
+            let prefix = '';
             switch(type) {
-                case 'invoice':
-                    documentNumber = `${prefix}-${year}${month}${day}-${random}`;
-                    break;
-                case 'quotation':
-                    documentNumber = `${prefix}-${year}${month}-${String(random).padStart(4, '0')}`;
-                    break;
-                case 'receipt':
-                    documentNumber = `${prefix}${year}${month}${day}${String(random).padStart(3, '0')}`;
-                    break;
-                case 'purchase_order':
-                    documentNumber = `${prefix}-${year}-${month}${day}-${random}`;
-                    break;
-                default:
-                    documentNumber = `DOC-${year}${month}${day}-${random}`;
+                case 'invoice': prefix = 'INV'; break;
+                case 'quotation': prefix = 'QUO'; break;
+                case 'purchase_order': prefix = 'PO'; break;
+                case 'receipt': prefix = 'REC'; break;
             }
-            
-            // Set the document number in the input field
-            const documentNumberInput = document.getElementById('documentNumber');
-            if (documentNumberInput) {
-                documentNumberInput.value = documentNumber;
-            }
-            
-            return documentNumber;
-        }
 
-        function getDocumentPrefix() {
-            const type = document.getElementById('documentType').value;
-            const prefixes = {
-                'invoice': 'INV',
-                'quotation': 'QUO', 
-                'receipt': 'RCP',
-                'purchase_order': 'PO'
-            };
-            return prefixes[type] || 'DOC';
+            const docNumber = prefix + '-' + year + month + day + '-' + random;
+            document.getElementById('documentNumber').value = docNumber;
         }
 
         // Add new item row
@@ -1088,8 +839,8 @@
                 subtotal += total;
             });
 
-            const taxRateValue = parseFloat(businessSettings.taxRate) || 0;
-            const tax = subtotal * (taxRateValue / 100);
+            const taxRate = parseFloat(businessSettings.taxRate) || 0;
+            const tax = subtotal * (taxRate / 100);
             const total = subtotal + tax;
 
             document.getElementById('subtotal').textContent = formatCurrency(subtotal);
@@ -1161,127 +912,63 @@
 
             const docTypeDisplay = docType.charAt(0).toUpperCase() + docType.slice(1).replace('_', ' ');
 
-            let html = '<div class="live-preview">';
+            preview.innerHTML = '<div style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">' +
+                '<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px;">' +
+                    '<div>' +
+                        '<h2 style="color: #333; margin: 0;">' + (businessSettings.businessName || 'Your Business Name') + '</h2>' +
+                        '<p style="margin: 5px 0; color: #666;">' + (businessSettings.businessAddress || 'Your Business Address') + '</p>' +
+                        '<p style="margin: 5px 0; color: #666;">' + (businessSettings.businessPhone || 'Your Phone') + '</p>' +
+                        '<p style="margin: 5px 0; color: #666;">' + (businessSettings.businessEmail || 'your@email.com') + '</p>' +
+                    '</div>' +
+                    '<div style="text-align: right;">' +
+                        '<h1 style="color: #007bff; margin: 0;">' + docTypeDisplay + '</h1>' +
+                        '<p style="margin: 5px 0; font-weight: bold;">#' + (docNumber || 'DOC-001') + '</p>' +
+                        '<p style="margin: 5px 0; color: #666;">' + (docDate || new Date().toISOString().split('T')[0]) + '</p>' +
+                    '</div>' +
+                '</div>' +
 
-            // Header with logo, company name, and document details
-            html += `
-                <div class="preview-header">
-                    <div class="preview-company-name">${businessSettings.businessName || 'Your Business Name'}</div>
-                    <div class="preview-company-details">
-                        ${businessSettings.businessAddress || 'Your Business Address'}<br>
-                        ${businessSettings.businessPhone || 'Your Phone'}<br>
-                        ${businessSettings.businessEmail || 'your@email.com'}
-                    </div>
-                    ${businessSettings.businessLogoUrl ? `<img src="${businessSettings.businessLogoUrl}" alt="Logo" class="preview-logo">` : ''}
-                </div>
-            `;
+                '<div style="margin-bottom: 30px; padding: 15px; background: #f8f9fa; border-radius: 5px;">' +
+                    '<h4 style="margin: 0 0 10px 0; color: #333;">Bill To:</h4>' +
+                    '<p style="margin: 5px 0; font-weight: bold;">' + (clientName || 'Client Name') + '</p>' +
+                    '<p style="margin: 5px 0; color: #666;">' + (clientAddress || 'Client Address') + '</p>' +
+                    '<p style="margin: 5px 0; color: #666;">' + (clientEmail || 'client@email.com') + '</p>' +
+                    '<p style="margin: 5px 0; color: #666;">' + (clientPhone || 'Client Phone') + '</p>' +
+                '</div>' +
 
-            // Document title and number
-            html += `
-                <div class="preview-document-info">
-                    <div class="preview-doc-title">${docTypeDisplay}</div>
-                    <div class="preview-doc-details">
-                        <div>#${docNumber || 'DOC-001'}</div>
-                        <div>Date: ${docDate || new Date().toISOString().split('T')[0]}</div>
-                    </div>
-                </div>
-            `;
+                '<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">' +
+                    '<thead>' +
+                        '<tr style="background: #007bff; color: white;">' +
+                            '<th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Description</th>' +
+                            '<th style="padding: 12px; text-align: center; border: 1px solid #ddd; width: 80px;">Qty</th>' +
+                            '<th style="padding: 12px; text-align: right; border: 1px solid #ddd; width: 100px;">Price</th>' +
+                            '<th style="padding: 12px; text-align: right; border: 1px solid #ddd; width: 100px;">Total</th>' +
+                        '</tr>' +
+                    '</thead>' +
+                    '<tbody>' +
+                        (itemsHtml || '<tr><td colspan="4" style="padding: 12px; text-align: center; color: #999; border: 1px solid #ddd;">No items added</td></tr>') +
+                    '</tbody>' +
+                '</table>' +
 
-            // Client section
-            html += `
-                <div class="preview-client-section">
-                    <div class="preview-client-header">Bill To:</div>
-                    <div class="preview-client-details">
-                        ${clientName || 'Client Name'}<br>
-                        ${clientAddress || 'Client Address'}<br>
-                        ${clientEmail || 'client@email.com'}<br>
-                        ${clientPhone || 'Client Phone'}
-                    </div>
-                </div>
-            `;
-
-            // Table of items
-            html += `
-                <table class="preview-table">
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th class="text-center">Qty</th>
-                            <th class="text-right">Price</th>
-                            <th class="text-right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${itemsHtml || '<tr><td colspan="4" class="text-center">No items added</td></tr>'}
-                    </tbody>
-                </table>
-            `;
-
-            // Totals calculation
-            const previewTaxRate = parseFloat(businessSettings.taxRate) || 0;
-            const tax = subtotal * (previewTaxRate / 100);
-            const grandTotal = subtotal + tax;
-
-            html += `
-                <div class="preview-totals">
-                    <table>
-                        <tr>
-                            <td>Subtotal:</td>
-                            <td class="text-right">${formatCurrency(subtotal)}</td>
-                        </tr>
-                        <tr>
-                            <td>Tax (${previewTaxRate}%):</td>
-                            <td class="text-right">${formatCurrency(tax)}</td>
-                        </tr>
-                        <tr class="total-row">
-                            <td>Total:</td>
-                            <td class="text-right">${formatCurrency(grandTotal)}</td>
-                        </tr>
-                    </table>
-                </div>
-            `;
-
-            // Footer with notes (if any)
-                if (notes.trim()) {
-                    html += `
-                        <div class="preview-notes">
-                            <h4>NOTES:</h4>
-                            <p>${notes.replace(/\n/g, '<br>')}</p>
-                        </div>
-                    `;
-                }
-
-                // Footer area with signature positioned at bottom
-                html += '<div class="preview-footer">';
-
-                if (businessSettings.signatureUrl && businessSettings.signatureUrl.trim()) {
-                    html += `
-                        <div class="preview-signature-section">
-                            <h4>AUTHORIZED SIGNATURE:</h4>
-                            <img src="${businessSettings.signatureUrl}" alt="Signature" class="preview-signature" 
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                            <div class="preview-signature-line" style="display: none;"></div>
-                        </div>
-                    `;
-                } else {
-                    html += `
-                        <div class="preview-signature-section">
-                            <h4>AUTHORIZED SIGNATURE:</h4>
-                            <div class="preview-signature-line"></div>
-                        </div>
-                    `;
-                }
-
-                html += `
-                    <div class="preview-bottom-line"></div>
-                    <div class="preview-thank-you">
-                        Thank you for your business!
-                    </div>
-                </div>`;
-
-                html += '</div>';  // Close preview container
-
-            preview.innerHTML = html;
+                '<div style="display: flex; justify-content: space-between; align-items: start;">' +
+                    '<div style="flex: 1; margin-right: 20px;">' +
+                        (notes ? '<div><h4 style="margin: 0 0 10px 0; color: #333;">Notes:</h4><p style="color: #666; margin: 0;">' + notes + '</p></div>' : '') +
+                    '</div>' +
+                    '<div style="min-width: 250px; background: #f8f9fa; padding: 15px; border-radius: 5px;">' +
+                        '<div style="display: flex; justify-content: space-between; margin-bottom: 10px;">' +
+                            '<span>Subtotal:</span>' +
+                            '<span>' + formatCurrency(subtotal) + '</span>' +
+                        '</div>' +
+                        '<div style="display: flex; justify-content: space-between; margin-bottom: 10px;">' +
+                            '<span>Tax (' + taxRate + '%):</span>' +
+                            '<span>' + formatCurrency(tax) + '</span>' +
+                        '</div>' +
+                        '<div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2em; padding-top: 10px; border-top: 1px solid #ddd;">' +
+                            '<span>Total:</span>' +
+                            '<span>' + formatCurrency(total) + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
         }
 
         // Verify download code
@@ -1361,8 +1048,8 @@
                 });
 
                 // Calculate totals
-                const documentTaxRate = parseFloat(businessSettings.taxRate) || 0;
-                const tax = subtotal * (documentTaxRate / 100);
+                const taxRate = parseFloat(businessSettings.taxRate) || 0;
+                const tax = subtotal * (taxRate / 100);
                 const grandTotal = subtotal + tax;
 
                 // Prepare document data
@@ -1388,7 +1075,7 @@
                     items: items,
                     totals: {
                         subtotal: subtotal,
-                        taxRate: documentTaxRate,
+                        taxRate: taxRate,
                         grandTotal: grandTotal
                     },
                     notes: notes
