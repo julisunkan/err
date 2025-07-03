@@ -111,17 +111,17 @@ class SimplePDFGenerator {
         });
     }
 
-    // Add simple header with logo support
+    // Add professional header with logo support
     async addSimpleHeader(businessData) {
         let headerY = this.currentY;
         let logoAdded = false;
 
-        // Add business logo if available
+        // Add business logo if available - positioned at top right
         if (businessData.businessLogoUrl && businessData.businessLogoUrl.trim()) {
             try {
                 const logoData = await this.loadImage(businessData.businessLogoUrl);
                 if (logoData) {
-                    const logoSize = 25; // Logo size in mm
+                    const logoSize = 30; // Larger logo size for professional look
                     const logoX = this.pageWidth - this.margin - logoSize;
 
                     this.doc.addImage(logoData, 'JPEG', logoX, headerY, logoSize, logoSize);
@@ -132,50 +132,59 @@ class SimplePDFGenerator {
             }
         }
 
-        // Company name - left aligned to avoid logo overlap
+        // Company name - prominent and professional
         if (businessData.businessName) {
             this.setFont(this.fontSize.title, 'bold');
-            const maxNameWidth = logoAdded ? this.pageWidth - (2 * this.margin) - 30 : this.pageWidth - (2 * this.margin);
+            const maxNameWidth = logoAdded ? this.pageWidth - (2 * this.margin) - 35 : this.pageWidth - (2 * this.margin);
             const nameLines = this.doc.splitTextToSize(businessData.businessName, maxNameWidth);
 
             for (let i = 0; i < nameLines.length; i++) {
-                this.doc.text(nameLines[i], this.margin, headerY + (i * 8));
+                this.doc.text(nameLines[i], this.margin, headerY + 5 + (i * 8));
             }
-            headerY += (nameLines.length * 8) + 5;
+            headerY += (nameLines.length * 8) + 8;
         }
 
-        // Adjust headerY if logo was added
+        // Adjust headerY if logo was added to ensure proper spacing
         if (logoAdded) {
-            headerY = Math.max(headerY, this.currentY + 30);
+            headerY = Math.max(headerY, this.currentY + 35);
         }
 
-        // Company details - left aligned with proper spacing
-        this.setFont(this.fontSize.small, 'normal');
+        // Company details section with proper spacing
+        this.setFont(this.fontSize.normal, 'normal');
 
+        // Business address with proper line spacing
         if (businessData.businessAddress) {
             const maxAddressWidth = this.pageWidth - (2 * this.margin);
             const addressLines = this.doc.splitTextToSize(businessData.businessAddress, maxAddressWidth);
 
             for (let i = 0; i < addressLines.length; i++) {
-                this.doc.text(addressLines[i], this.margin, headerY + (i * 5));
+                this.doc.text(addressLines[i], this.margin, headerY + (i * 6));
             }
-            headerY += (addressLines.length * 5) + 3;
+            headerY += (addressLines.length * 6) + 4;
         }
 
+        // Contact information with professional formatting
         if (businessData.businessPhone || businessData.businessEmail) {
-            const contactInfo = [];
-            if (businessData.businessPhone) contactInfo.push(`Tel: ${businessData.businessPhone}`);
-            if (businessData.businessEmail) contactInfo.push(`Email: ${businessData.businessEmail}`);
-
-            this.doc.text(contactInfo.join(' | '), this.margin, headerY);
-            headerY += 6;
+            const contactY = headerY;
+            
+            if (businessData.businessPhone) {
+                this.doc.text(`Phone: ${businessData.businessPhone}`, this.margin, contactY);
+                headerY += 6;
+            }
+            
+            if (businessData.businessEmail) {
+                this.doc.text(`Email: ${businessData.businessEmail}`, this.margin, headerY);
+                headerY += 6;
+            }
         }
 
-        // Add separator line
-        this.doc.setLineWidth(0.5);
-        this.doc.line(this.margin, headerY + 5, this.pageWidth - this.margin, headerY + 5);
+        // Professional separator line with proper spacing
+        headerY += 8;
+        this.doc.setLineWidth(1);
+        this.doc.setDrawColor(0, 0, 0);
+        this.doc.line(this.margin, headerY, this.pageWidth - this.margin, headerY);
 
-        this.currentY = headerY + 15;
+        this.currentY = headerY + 20;
     }
 
     // Add document title and details
@@ -206,44 +215,48 @@ class SimplePDFGenerator {
         this.currentY = sectionY + 20;
     }
 
-    // Add client information
+    // Add client information with professional formatting
     addClientSection(clientData) {
-        this.setFont(this.fontSize.normal, 'bold');
+        // Bill To section header
+        this.setFont(this.fontSize.subtitle, 'bold');
         this.doc.text('BILL TO:', this.margin, this.currentY);
-        this.currentY += 8;
+        this.currentY += 12;
 
-        this.setFont(this.fontSize.normal, 'normal');
-
+        // Client name - prominent
         if (clientData.name) {
             this.setFont(this.fontSize.normal, 'bold');
             this.doc.text(clientData.name, this.margin, this.currentY);
-            this.currentY += 6;
-            this.setFont(this.fontSize.normal, 'normal');
+            this.currentY += 8;
         }
 
+        // Client address with proper spacing
         if (clientData.address) {
+            this.setFont(this.fontSize.normal, 'normal');
             const maxAddressWidth = this.pageWidth - (2 * this.margin);
             const addressLines = this.doc.splitTextToSize(clientData.address, maxAddressWidth);
 
             for (let i = 0; i < addressLines.length; i++) {
-                this.doc.text(addressLines[i], this.margin, this.currentY + (i * 5));
+                this.doc.text(addressLines[i], this.margin, this.currentY + (i * 6));
             }
-            this.currentY += (addressLines.length * 5);
+            this.currentY += (addressLines.length * 6) + 4;
         }
 
-        if (clientData.email || clientData.phone) {
-            const clientContact = [];
-            if (clientData.email) clientContact.push(clientData.email);
-            if (clientData.phone) clientContact.push(clientData.phone);
-
-            this.doc.text(clientContact.join(' | '), this.margin, this.currentY);
+        // Client contact information - properly formatted
+        this.setFont(this.fontSize.normal, 'normal');
+        if (clientData.phone) {
+            this.doc.text(`Phone: ${clientData.phone}`, this.margin, this.currentY);
+            this.currentY += 6;
+        }
+        
+        if (clientData.email) {
+            this.doc.text(`Email: ${clientData.email}`, this.margin, this.currentY);
             this.currentY += 6;
         }
 
-        this.currentY += 10;
+        this.currentY += 15;
     }
 
-    // Structured items table with container-based layout
+    // Professional items table with clean formatting
     addSimpleItemsTable(items, currency = 'USD') {
         if (!items || items.length === 0) {
             this.setFont(this.fontSize.normal, 'normal');
@@ -254,14 +267,15 @@ class SimplePDFGenerator {
 
         const tableX = this.margin;
         const tableWidth = this.pageWidth - (2 * this.margin);
-        const rowHeight = 8;
+        const rowHeight = 10;
+        const headerHeight = 12;
 
-        // Define column structure with fixed widths
+        // Define column structure with optimized widths for better readability
         const columns = [
-            { name: 'DESCRIPTION', width: tableWidth * 0.50, align: 'left' },
-            { name: 'QTY', width: tableWidth * 0.15, align: 'center' },
-            { name: 'PRICE', width: tableWidth * 0.17, align: 'right' },
-            { name: 'TOTAL', width: tableWidth * 0.18, align: 'right' }
+            { name: 'DESCRIPTION', width: tableWidth * 0.48, align: 'left' },
+            { name: 'QTY', width: tableWidth * 0.12, align: 'center' },
+            { name: 'UNIT PRICE', width: tableWidth * 0.20, align: 'right' },
+            { name: 'AMOUNT', width: tableWidth * 0.20, align: 'right' }
         ];
 
         // Calculate column positions
@@ -271,47 +285,49 @@ class SimplePDFGenerator {
             currentX += col.width;
         });
 
-        // Draw table container
-        this.doc.setLineWidth(0.5);
-        this.doc.rect(tableX, this.currentY - 2, tableWidth, (items.length + 1) * rowHeight + 8);
-
-        // Table header with background
+        // Table header with professional styling
         this.setFont(this.fontSize.normal, 'bold');
-        const headerY = this.currentY + 3;
+        const headerY = this.currentY + 6;
 
-        // Header background
-        this.doc.setFillColor(240, 240, 240);
-        this.doc.rect(tableX, headerY - 4, tableWidth, rowHeight, 'F');
+        // Clean header background - light gray for contrast
+        this.doc.setFillColor(245, 245, 245);
+        this.doc.rect(tableX, headerY - 4, tableWidth, headerHeight, 'F');
 
-        // Draw vertical lines for columns
+        // Header border
+        this.doc.setLineWidth(1);
+        this.doc.setDrawColor(0, 0, 0);
+        this.doc.rect(tableX, headerY - 4, tableWidth, headerHeight);
+
+        // Draw clean vertical lines for columns
         let lineX = tableX;
-        for (let i = 0; i < columns.length; i++) {
-            if (i > 0) {
-                this.doc.line(lineX, this.currentY - 2, lineX, this.currentY + (items.length + 1) * rowHeight + 6);
-            }
-            lineX += columns[i].width;
+        for (let i = 1; i < columns.length; i++) {
+            lineX += columns[i-1].width;
+            this.doc.line(lineX, headerY - 4, lineX, headerY + headerHeight - 4);
         }
 
-        // Header text
+        // Header text with proper alignment
         columns.forEach(col => {
-            let textX = col.x + 2; // Left padding
+            let textX = col.x + 4; // Left padding
             if (col.align === 'center') {
                 textX = col.x + (col.width / 2);
             } else if (col.align === 'right') {
-                textX = col.x + col.width - 2; // Right padding
+                textX = col.x + col.width - 4; // Right padding
             }
 
-            this.doc.text(col.name, textX, headerY, { align: col.align === 'center' ? 'center' : (col.align === 'right' ? 'right' : 'left') });
+            if (col.align === 'center') {
+                const textWidth = this.doc.getTextWidth(col.name);
+                textX -= textWidth / 2;
+            } else if (col.align === 'right') {
+                textX -= this.doc.getTextWidth(col.name);
+            }
+
+            this.doc.text(col.name, textX, headerY + 2);
         });
 
-        // Header separator line
-        this.doc.setLineWidth(0.8);
-        this.doc.line(tableX, headerY + 4, tableX + tableWidth, headerY + 4);
+        this.currentY = headerY + headerHeight + 2;
 
-        this.currentY = headerY + rowHeight + 2;
-
-        // Table rows
-        this.setFont(this.fontSize.small, 'normal');
+        // Table rows with clean styling
+        this.setFont(this.fontSize.normal, 'normal');
 
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
@@ -319,15 +335,21 @@ class SimplePDFGenerator {
             const quantity = parseFloat(item.quantity) || 0;
             const total = price * quantity;
 
-            const rowY = this.currentY;
+            const rowY = this.currentY + 3;
 
-            // Alternate row background
-            if (i % 2 === 1) {
-                this.doc.setFillColor(248, 248, 248);
-                this.doc.rect(tableX, rowY - 3, tableWidth, rowHeight, 'F');
+            // Row border
+            this.doc.setLineWidth(0.3);
+            this.doc.setDrawColor(200, 200, 200);
+            this.doc.rect(tableX, rowY - 2, tableWidth, rowHeight);
+
+            // Column separators
+            let lineX = tableX;
+            for (let j = 1; j < columns.length; j++) {
+                lineX += columns[j-1].width;
+                this.doc.line(lineX, rowY - 2, lineX, rowY + rowHeight - 2);
             }
 
-            // Row data
+            // Row data with proper formatting
             const rowData = [
                 item.description || 'No description',
                 quantity.toString(),
@@ -335,14 +357,14 @@ class SimplePDFGenerator {
                 this.formatCurrency(total, currency)
             ];
 
-            // Draw each cell
+            // Draw each cell with proper alignment and padding
             columns.forEach((col, colIndex) => {
                 let text = rowData[colIndex];
-                let textX = col.x + 2; // Left padding
+                let textX = col.x + 4; // Left padding
 
-                // Truncate description if too long
+                // Truncate description if too long with ellipsis
                 if (colIndex === 0) {
-                    const maxWidth = col.width - 4;
+                    const maxWidth = col.width - 8;
                     const textWidth = this.doc.getTextWidth(text);
                     if (textWidth > maxWidth) {
                         while (this.doc.getTextWidth(text + '...') > maxWidth && text.length > 0) {
@@ -358,20 +380,21 @@ class SimplePDFGenerator {
                     const textWidth = this.doc.getTextWidth(text);
                     textX -= textWidth / 2;
                 } else if (col.align === 'right') {
-                    textX = col.x + col.width - 2 - this.doc.getTextWidth(text);
+                    textX = col.x + col.width - 4 - this.doc.getTextWidth(text);
                 }
 
-                this.doc.text(text, textX, rowY);
+                this.doc.text(text, textX, rowY + 3);
             });
 
             this.currentY += rowHeight;
         }
 
         // Final table border
-        this.doc.setLineWidth(0.5);
+        this.doc.setLineWidth(1);
+        this.doc.setDrawColor(0, 0, 0);
         this.doc.line(tableX, this.currentY + 2, tableX + tableWidth, this.currentY + 2);
 
-        this.currentY += 15;
+        this.currentY += 20;
     }
 
     // Simple totals section
@@ -417,67 +440,88 @@ class SimplePDFGenerator {
         this.currentY += 20;
     }
 
-    // Simple footer with signature image support
+    // Professional footer with signature and notes
     async addSimpleFooter(businessData, notes = '') {
-        // Notes section if provided
+        // Notes section with professional formatting
         if (notes && notes.trim()) {
-            this.setFont(this.fontSize.small, 'bold');
+            this.setFont(this.fontSize.normal, 'bold');
             this.doc.text('NOTES:', this.margin, this.currentY);
-            this.currentY += 6;
+            this.currentY += 8;
 
-            this.setFont(this.fontSize.small, 'normal');
+            this.setFont(this.fontSize.normal, 'normal');
             const maxWidth = this.pageWidth - (2 * this.margin);
             const noteLines = this.doc.splitTextToSize(notes, maxWidth);
 
-            // Limit to 3 lines
-            for (let i = 0; i < noteLines.length && i < 3; i++) {
+            // Add notes with proper line spacing
+            for (let i = 0; i < noteLines.length && i < 4; i++) {
                 this.doc.text(noteLines[i], this.margin, this.currentY);
                 this.currentY += 6;
             }
 
-            this.currentY += 10;
+            this.currentY += 15;
         }
 
-        // Signature section with image support
+        // Professional signature section
         if (businessData.signatureUrl && businessData.signatureUrl.trim()) {
-            this.setFont(this.fontSize.small, 'bold');
-            this.doc.text('Authorized Signature:', this.margin, this.currentY);
-            this.currentY += 10;
+            this.setFont(this.fontSize.normal, 'bold');
+            this.doc.text('AUTHORIZED SIGNATURE:', this.margin, this.currentY);
+            this.currentY += 12;
 
             try {
                 const signatureData = await this.loadImage(businessData.signatureUrl);
                 if (signatureData) {
-                    // Add signature image
-                    const signatureWidth = 40;
-                    const signatureHeight = 20;
+                    // Add signature image with professional sizing
+                    const signatureWidth = 50;
+                    const signatureHeight = 25;
                     this.doc.addImage(signatureData, 'JPEG', this.margin, this.currentY, signatureWidth, signatureHeight);
-                    this.currentY += signatureHeight + 5;
-                } else {
-                    // Fallback to signature line if image fails
+                    this.currentY += signatureHeight + 8;
+                    
+                    // Add signature line below image
                     this.doc.setLineWidth(0.5);
-                    this.doc.line(this.margin, this.currentY, this.margin + 60, this.currentY);
+                    this.doc.setDrawColor(0, 0, 0);
+                    this.doc.line(this.margin, this.currentY, this.margin + signatureWidth, this.currentY);
                     this.currentY += 15;
+                } else {
+                    // Professional signature line if image fails
+                    this.doc.setLineWidth(0.8);
+                    this.doc.setDrawColor(0, 0, 0);
+                    this.doc.line(this.margin, this.currentY, this.margin + 80, this.currentY);
+                    this.currentY += 18;
                 }
             } catch (error) {
                 console.warn('Failed to add signature:', error);
-                // Fallback to signature line
-                this.doc.setLineWidth(0.5);
-                this.doc.line(this.margin, this.currentY, this.margin + 60, this.currentY);
-                this.currentY += 15;
+                // Professional fallback signature line
+                this.doc.setLineWidth(0.8);
+                this.doc.setDrawColor(0, 0, 0);
+                this.doc.line(this.margin, this.currentY, this.margin + 80, this.currentY);
+                this.currentY += 18;
             }
+        } else {
+            // Add signature section even without image
+            this.setFont(this.fontSize.normal, 'bold');
+            this.doc.text('AUTHORIZED SIGNATURE:', this.margin, this.currentY);
+            this.currentY += 12;
+            
+            this.doc.setLineWidth(0.8);
+            this.doc.setDrawColor(0, 0, 0);
+            this.doc.line(this.margin, this.currentY, this.margin + 80, this.currentY);
+            this.currentY += 18;
         }
 
-        // Footer line
-        const footerY = this.pageHeight - 20;
-        this.doc.setLineWidth(0.3);
+        // Professional footer with clean line
+        const footerY = this.pageHeight - 25;
+        this.doc.setLineWidth(0.5);
+        this.doc.setDrawColor(0, 0, 0);
         this.doc.line(this.margin, footerY, this.pageWidth - this.margin, footerY);
 
-        // Footer text
+        // Professional footer text
         this.setFont(this.fontSize.small, 'normal');
+        this.doc.setTextColor(100, 100, 100);
 
-        // Thank you message centered
-        const thankYou = 'Thank you for your patronage!';
-        this.doc.text(thankYou, this.pageWidth / 2, footerY + 8, { align: 'center' });
+        // Thank you message centered and professional
+        const thankYou = 'Thank you for your business!';
+        const textWidth = this.doc.getTextWidth(thankYou);
+        this.doc.text(thankYou, (this.pageWidth - textWidth) / 2, footerY + 10);
     }
 
     // Generate complete PDF
